@@ -8,19 +8,17 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-08-19
 
-Phases 0 through 4 are done, and **Phase 6 is done**. **Deployed as v1.5.**
+Phases 0 through 6 are done. **Deployed as v1.6.**
 
-> **Phase 5 (Flashcards) was skipped at the owner's request** and is still outstanding.
-> The quiz does not depend on it, so nothing is blocked — but `#/flashcards` is still
-> the Phase 1 placeholder, which means one of the five features in `CLAUDE.md` §1 is
-> not built.
+Phase 5 was skipped at the owner's request and built afterwards, out of order — the quiz
+did not depend on it. **All five features in `CLAUDE.md` §1 are now built.**
 
 Between phases 1 and 2 the owner asked for **dark mode only**, reversing the light
 "paper and ink" direction v1.0 shipped with. The palette was re-derived and re-measured
 against the new ground rather than flipped by eye; `CLAUDE.md` §7 records both the
 reversal and the colourblind sweep behind it. Shipped as **v1.1**.
 
-**Phase 5 (skipped) and Phase 7 remain.**
+**Only Phase 7, the quality pass, remains.**
 
 Four decisions were taken with the owner before any code, and are folded into
 `CLAUDE.md`:
@@ -182,15 +180,35 @@ nothing else.
   effect for a fact already knowable at render time. Fixed by deriving the initial
   state with a lazy initialiser.
 
-## Phase 5 — Flashcards ⏭ SKIPPED — still outstanding
+## Phase 5 — Flashcards ✅ · _built after Phase 6, out of order_
 
-- [ ] Deck shuffled once per visit; next / previous; position indicator
-- [ ] Front is the glyph alone, very large. Click flips
-- [ ] Back reveals romaji + example words with romaji and English, and a replay control
-- [ ] The flip plays audio — and **the reveal never depends on it**
-- [ ] Designed empty-deck state linking back to the grid
-- [ ] `prefers-reduced-motion` collapses the flip to an instant swap
-- [ ] `feat: flashcards`
+- [x] Deck shuffled once per visit; next / previous; position indicator
+- [x] Front is the glyph alone, very large. Click flips
+- [x] Back reveals the romaji; example words with romaji and English, and a replay
+      control, sit below the card
+- [x] The flip plays audio on the REVEAL only — flipping back is silent — and the
+      reveal never depends on it
+- [x] A new card always starts face down; carrying the flip across would hand over the
+      next answer for free
+- [x] Designed empty-deck state linking back to the grid
+- [x] `prefers-reduced-motion` collapses the flip to an instant swap, through the
+      global rule in `index.css` — nothing in the component checks for it
+- [x] Added to `/styleguide`
+- [x] **Verified in a real browser**: the card really rotates (`matrix3d`), the next
+      card starts face down, no horizontal overflow at 375px, no console errors
+- [x] `feat: flashcards`
+
+**Deployed as 1.6.** 109 tests across 15 files.
+
+**Two constraints the implementation ran into:**
+
+- **Both faces have to be in the DOM at once**, or there is nothing to flip to. That
+  puts the answer on the page before it is revealed — handled for sighted users by
+  `backface-visibility`, and for screen readers by marking both faces `aria-hidden` and
+  naming the button explicitly. A test asserts the reading stays out of the accessible
+  name until the flip.
+- **The replay control cannot live on the back face**, because a button cannot contain
+  another button. It sits with the example words below the card.
 
 ## Phase 6 — Quiz ✅
 

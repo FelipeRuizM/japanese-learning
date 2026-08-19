@@ -3,6 +3,7 @@ import type { Character } from '../types/characters'
 import { CharacterGrid } from '../components/CharacterGrid'
 import { PronunciationNote, SpeakButton } from '../components/SpeakButton'
 import { QuizCard } from '../components/QuizCard'
+import { Flashcard } from '../components/Flashcard'
 import { EmptyDeck } from '../components/EmptyDeck'
 import { buildQuestion } from '../lib/quiz'
 import { allCharacters, DEFAULT_CHARACTER_SET } from '../characters/registry'
@@ -65,6 +66,35 @@ const SAMPLE_N = {
   vowel: null,
   examples: [{ kana: 'みかん', romaji: 'mikan', english: 'mandarin orange' }],
 } as const satisfies Character
+
+/** A live flashcard, so the flip and both faces are reviewable in isolation. */
+function FlashcardDemo() {
+  const all = allCharacters(DEFAULT_CHARACTER_SET)
+  const character = all.find((c) => c.romaji === 'ka') ?? all[0]
+  const { status, speak } = usePronunciation()
+  const [revealed, setRevealed] = useState(false)
+  if (!character) return null
+
+  return (
+    <div className="flex flex-col gap-3">
+      <Flashcard
+        character={character}
+        revealed={revealed}
+        onFlip={() => {
+          setRevealed((r) => !r)
+        }}
+        pronunciationStatus={status}
+        onSpeak={speak}
+      />
+      <p className="m-0 max-w-prose text-sm text-ink-2">
+        Both faces are in the DOM so the card has something to flip to, so both are
+        aria-hidden and the button carries the name — otherwise a screen reader would
+        read the answer off the back face before it was revealed. Under
+        prefers-reduced-motion the flip collapses to an instant swap.
+      </p>
+    </div>
+  )
+}
 
 /**
  * A quiz card in both states, built from a FIXED question rather than a random
@@ -216,6 +246,10 @@ export function Styleguide() {
           happened. The note is rendered once per screen, not beside all forty-six
           characters.
         </p>
+      </Section>
+
+      <Section title="Flashcard">
+        <FlashcardDemo />
       </Section>
 
       <Section title="Quiz card">

@@ -3,13 +3,12 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-19.** Phase 6 shipped as **v1.5** — the quiz. (v1.0 scaffold; v1.1
+> **Status — 2026-08-19.** Phase 5 shipped as **v1.6** — flashcards, the one feature
+> that had been skipped. **All five features in §1 are now built.** (v1.0 scaffold; v1.1
 > reversed the design system to dark only, see §7; v1.2 the character model and data;
-> v1.3 the grid and deck; v1.4 pronunciation.)
+> v1.3 the grid and deck; v1.4 pronunciation; v1.5 the quiz.)
 >
-> **PHASE 5 — FLASHCARDS — IS SKIPPED AND STILL OUTSTANDING.** The owner asked to jump
-> to the quiz, which does not depend on it. `#/flashcards` is still the Phase 1
-> placeholder, so one of the five features in §1 is not built. Nothing else is missing.
+> Only **Phase 7, the quality pass**, remains.
 
 ---
 
@@ -309,7 +308,18 @@ plus `toggle`, `selectRow`, `selectAll`, `clear`.
 - The deck, shuffled once per visit. Next / previous, and position ("7 of 15").
 - **Front:** the glyph, very large, and nothing else.
 - **Click flips.** The flip **plays the audio and reveals** the romaji and the example
-  words with their romaji and English. A replay control sits on the back.
+  words with their romaji and English. A replay control sits with them. Flipping _back_
+  is silent — only the reveal speaks.
+
+  > **Both faces are in the DOM at once**, because a flip needs something to flip to.
+  > That means the answer is present before it is revealed, so both faces are
+  > `aria-hidden` and the button carries an explicit name that mentions the reading only
+  > once revealed. Without that a screen reader reads the answer straight off the back
+  > face and there is nothing left to practise.
+  >
+  > The example words and the replay control sit **below** the card rather than on its
+  > back face: a button cannot contain another button, and replay has to be a real one.
+
 - `prefers-reduced-motion` collapses the flip to an instant swap.
 
 ### Quiz — see §6.
