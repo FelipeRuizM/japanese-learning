@@ -3,9 +3,9 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-19.** Phase 3 shipped as **v1.3** — the selection grid and the
-> deck. (v1.0 scaffold; v1.1 reversed the design system to dark only, see §7; v1.2 the
-> character model and data.) Flashcards are Phase 5, the quiz Phase 6.
+> **Status — 2026-08-19.** Phase 4 shipped as **v1.4** — pronunciation. (v1.0 scaffold;
+> v1.1 reversed the design system to dark only, see §7; v1.2 the character model and
+> data; v1.3 the grid and deck.) Flashcards are Phase 5, the quiz Phase 6.
 
 ---
 
@@ -227,7 +227,15 @@ export type PronunciationProvider = {
 - **`fileProvider`** is written, unit-tested, and **left unwired**. It plays
   `character.audio` through an `<audio>` element. Turning it on later is one line in
   `usePronunciation` plus populating the `audio` field.
-- `usePronunciation()` returns `{ speak, status: 'ready' | 'unavailable' }`.
+- `usePronunciation()` returns `{ speak, status }`, where status is
+  **`'checking' | 'ready' | 'unavailable'`**.
+
+  > **`checking` is a third state, added in Phase 4 against this spec's original
+  > two.** Voice resolution is asynchronous and `getVoices()` is empty on the first
+  > call, so collapsing "still looking" into "unavailable" would flash _No Japanese
+  > voice on this device_ at every user on first paint and then take it back. Whether
+  > the API **exists** is synchronous and decides the initial value during render;
+  > only the voice lookup updates from an effect.
 
 **Two traps, both must be handled:**
 
@@ -236,8 +244,20 @@ export type PronunciationProvider = {
 2. **Chrome on iOS uses the WebKit voice list**, not the desktop Chrome one. Never
    branch on the browser; branch on what `getVoices()` actually returns.
 
-**When no Japanese voice is installed** — real on some Firefox and Linux setups — the
-control is disabled and the UI says "No Japanese voice on this device" plainly.
+**When no Japanese voice is installed** — real on some Firefox and Linux setups, and on
+headless Chromium, where this path was verified — the control is **disabled and explains
+itself rather than being hidden.** An absent button reads as "this app has no audio",
+which is not what happened. The explanation is rendered **once per screen**, not beside
+all forty-six characters.
+
+Two further behaviours the implementation settled, both tested:
+
+- **A loaded voice list with no Japanese in it answers immediately.** Only an _empty_
+  list means "not loaded yet". Making someone wait out the timeout to be told what is
+  already known is just a slow no.
+- **`speak` cancels anything in flight first.** Chrome queues utterances rather than
+  replacing them, so a learner clicking quickly through flashcards would build a
+  backlog that keeps talking after they have moved on.
 
 > **Romaji reveal must never depend on audio.** Audio is an enhancement. Every place a
 > sound plays, the romaji is already on screen or is revealed by the same click.

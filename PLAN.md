@@ -8,14 +8,14 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-08-19
 
-Phases 0 through 3 are done. **Deployed as v1.3.**
+Phases 0 through 4 are done. **Deployed as v1.4.**
 
 Between phases 1 and 2 the owner asked for **dark mode only**, reversing the light
 "paper and ink" direction v1.0 shipped with. The palette was re-derived and re-measured
 against the new ground rather than flipped by eye; `CLAUDE.md` §7 records both the
 reversal and the colourblind sweep behind it. Shipped as **v1.1**.
 
-**Phase 4 is next.**
+**Phase 5 is next.**
 
 Four decisions were taken with the owner before any code, and are folded into
 `CLAUDE.md`:
@@ -144,19 +144,38 @@ nothing else.
   `transition-colors` caught mid-flight, not a bug. Settled, it is the validated
   7.93:1 ground-on-accent pair. Worth knowing before someone "fixes" it.
 
-## Phase 4 — Pronunciation
+## Phase 4 — Pronunciation ✅
 
-- [ ] `src/lib/pronunciation.ts` — the `PronunciationProvider` interface,
-      `speechProvider`, and `fileProvider` **written and tested but unwired**
-- [ ] The `voiceschanged` race handled; voice resolution by what `getVoices()` returns,
-      never by browser sniffing
-- [ ] `usePronunciation()` → `{ speak, status }`; the `unavailable` state renders an
-      honest "No Japanese voice on this device" beside a disabled control
-- [ ] **Speaks the glyph, never the romaji**
-- [ ] Tests against a stubbed `speechSynthesis`: empty first call, voice found, no
-      Japanese voice at all
-- [ ] Added to `/styleguide`
-- [ ] `feat: pronunciation providers`
+- [x] `src/lib/pronunciation.ts` — the `PronunciationProvider` interface,
+      `createSpeechProvider`, and `createFileProvider` **written and tested but unwired**
+- [x] The `voiceschanged` race handled; voice resolution by what `getVoices()` reports,
+      never by browser sniffing, and `ja_JP` with an underscore matches too
+- [x] Resolution cached per synth object — no test-only reset hatch in shipping code
+- [x] `usePronunciation()` → `{ speak, status }` with **three** states; the
+      `unavailable` control is disabled and explains itself rather than hiding
+- [x] **Speaks the glyph, never the romaji** — tested explicitly
+- [x] `speak` cancels anything in flight, so clicking quickly builds no backlog
+- [x] Errors resolve rather than reject: revealing romaji must never require a `catch`
+- [x] `SpeakButton` + `PronunciationNote`, added to `/styleguide` in all three states
+      plus a live control wired to the real device
+- [x] **Verified in a real browser, both paths.** Headless Chromium has the API and five
+      voices, none Japanese → resolves to `unavailable` immediately and shows the note.
+      With a Japanese voice injected and `getVoices()` starting empty, the late
+      `voiceschanged` resolves it to `ready`, and a click speaks か — the glyph — after
+      a `cancel()`
+- [x] `feat: pronunciation providers`
+
+**Deployed as 1.4.** 72 tests across 11 files.
+
+**Two corrections the implementation forced:**
+
+- **`checking` is a third status**, against the original two in `CLAUDE.md` §4.2.
+  Collapsing "still resolving" into "unavailable" would flash the no-voice message at
+  every user on first paint. Whether the API _exists_ is synchronous and now decides
+  the initial value during render.
+- **oxlint caught a cascading render** — `setState` called synchronously inside the
+  effect for a fact already knowable at render time. Fixed by deriving the initial
+  state with a lazy initialiser.
 
 ## Phase 5 — Flashcards
 

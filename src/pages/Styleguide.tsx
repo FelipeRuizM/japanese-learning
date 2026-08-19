@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import type { Character } from '../types/characters'
 import { CharacterGrid } from '../components/CharacterGrid'
+import { PronunciationNote, SpeakButton } from '../components/SpeakButton'
+import { usePronunciation } from '../lib/usePronunciation'
 import { GridCell, GridGap } from '../components/GridCell'
 import { FLOW_FIXTURE } from '../characters/flowFixture'
 import {
@@ -59,6 +61,17 @@ const SAMPLE_N = {
   vowel: null,
   examples: [{ kana: 'みかん', romaji: 'mikan', english: 'mandarin orange' }],
 } as const satisfies Character
+
+/** The real control, resolving against whatever voices this device has. */
+function LivePronunciation() {
+  const { status, speak } = usePronunciation()
+  return (
+    <div className="flex items-center gap-3">
+      <SpeakButton character={SAMPLE} status={status} onSpeak={speak} />
+      <Label>status: {status}</Label>
+    </div>
+  )
+}
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -139,6 +152,33 @@ export function Styleguide() {
             <CrossMark /> Not quite
           </p>
         </div>
+      </Section>
+
+      <Section title="Pronunciation">
+        <LivePronunciation />
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          Above is the real control, wired to this device. Below are the three states
+          forced, so the one you cannot reproduce locally is still reviewable.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          {(['ready', 'checking', 'unavailable'] as const).map((status) => (
+            <div key={status} className="flex flex-col items-center gap-2">
+              <SpeakButton
+                character={SAMPLE}
+                status={status}
+                onSpeak={() => undefined}
+              />
+              <Label>{status}</Label>
+            </div>
+          ))}
+        </div>
+        <PronunciationNote status="unavailable" />
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          The control is disabled and explains itself rather than being hidden — an
+          absent button reads as &ldquo;this app has no audio&rdquo;, which is not what
+          happened. The note is rendered once per screen, not beside all forty-six
+          characters.
+        </p>
       </Section>
 
       <Section title="Grid cell">
