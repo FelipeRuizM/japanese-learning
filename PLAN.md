@@ -8,17 +8,23 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-08-19
 
-Phases 0 through 6 are done. **Deployed as v1.6.**
+**The build is complete at v1.7.** All seven phases are done and all five features in
+`CLAUDE.md` §1 are built.
 
-Phase 5 was skipped at the owner's request and built afterwards, out of order — the quiz
-did not depend on it. **All five features in `CLAUDE.md` §1 are now built.**
+Phase 5 was skipped at the owner's request and built after Phase 6, out of order — the
+quiz did not depend on it.
+
+> **Nothing has been deployed.** The repository has no GitHub remote, so the Actions
+> workflow has never run. Create a repo named `japanese-learning`, push `main`, and set
+> Pages to build from _GitHub Actions_. If the repo takes a different name, `base` in
+> `vite.config.ts` changes with it.
 
 Between phases 1 and 2 the owner asked for **dark mode only**, reversing the light
 "paper and ink" direction v1.0 shipped with. The palette was re-derived and re-measured
 against the new ground rather than flipped by eye; `CLAUDE.md` §7 records both the
 reversal and the colourblind sweep behind it. Shipped as **v1.1**.
 
-**Only Phase 7, the quality pass, remains.**
+**Katakana is the natural next addition: a data module plus one registry entry.**
 
 Four decisions were taken with the owner before any code, and are folded into
 `CLAUDE.md`:
@@ -247,14 +253,43 @@ nothing else.
   discard a `useMemo` and recompute it, which would reshuffle the questions underneath
   the learner mid-round.
 
-## Phase 7 — Quality pass
+## Phase 7 — Quality pass ✅
 
-- [ ] Full Vitest suite green against every item in `CLAUDE.md` §8
-- [ ] Keyboard navigation end to end; real focus states; semantic headings
-- [ ] axe clean on every route; Lighthouse mobile performance and accessibility ≥ 90
-- [ ] Empty-state audit — no bare "No data" anywhere
-- [ ] Console clean on a fresh run
-- [ ] `chore: quality pass — tests, a11y, and lighthouse`
+- [x] Full Vitest suite green against every item in `CLAUDE.md` §8 — **116 tests across
+      17 files**
+- [x] Keyboard navigation end to end, verified in a browser: every stop reachable, tab
+      order nav → controls → cells, **a visible focus ring on every one**, and a quiz
+      question answerable with the keyboard alone (focus lands on _Next_ afterwards)
+- [x] Semantic headings — **two routes were missing one; see below**
+- [x] **axe clean on every route AND in the states that matter**: empty deck, row
+      selected, card flipped, question answered. Eight combinations, **0 violations**
+- [x] **Lighthouse mobile: performance 97–98, accessibility 100, best practices 100,
+      SEO 100** — no failed audits
+- [x] `prefers-reduced-motion` measured, not assumed: the flip goes from 0.3s to
+      0.00001s
+- [x] Empty-state audit — no bare "No data", and no placeholder copy left anywhere
+- [x] Console clean: **no errors or warnings on any route, in any state**
+- [x] Route-level error boundary finally exercised by a test — it was in §8 from the
+      start and had never been run
+- [x] `scripts/audit-a11y.mjs` committed, so the audit is repeatable rather than a
+      one-off claim
+- [x] `chore: quality pass — tests, a11y, and lighthouse`
+
+**Deployed as 1.7.**
+
+**Two defects the audit found that the unit tests could not:**
+
+- **Flashcards and the quiz had no `h2`** once a deck existed — only the site-wide `h1`.
+  A _missing_ heading is not a WCAG violation, so axe was silent; only reading the
+  document outline caught it. Rather than bolt a large title onto two deliberately spare
+  pages, the position indicator that was already there became the heading — "Card 3 of
+  5" tells a screen-reader user where they are, which "Flashcards" (already in the nav)
+  does not. No visual change; `src/pages/headings.test.tsx` guards it.
+- **The grid cell's `aria-label` did not match its own visible text.** The label was
+  added in v1.3 to stop a screen reader running "かka" together, and in doing so it broke
+  the match a voice-control user depends on — a fix that caused a second defect. Fixed at
+  the source this time, by putting a real space between the two children so the computed
+  name and the visible text are the same string.
 
 ---
 

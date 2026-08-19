@@ -25,7 +25,7 @@ function renderQuiz() {
 }
 
 const selectRow = async (user: ReturnType<typeof userEvent.setup>, label: string) => {
-  await user.click(screen.getByRole('button', { name: `Select the ${label}` }))
+  await user.click(screen.getByRole('button', { name: `${label} row, select all` }))
 }
 
 /**
@@ -78,7 +78,7 @@ describe('the quiz', () => {
   it('starts a round once characters are selected', async () => {
     const user = userEvent.setup()
     renderQuiz()
-    await selectRow(user, 'K-row')
+    await selectRow(user, 'K')
 
     expect(screen.getByText('Question 1 of 5')).toBeInTheDocument()
     expect(options()).toHaveLength(4)
@@ -92,7 +92,7 @@ describe('the quiz', () => {
   it('marks a correct answer and reveals an example word', async () => {
     const user = userEvent.setup()
     renderQuiz()
-    await selectRow(user, 'K-row')
+    await selectRow(user, 'K')
 
     const answer = currentAnswer()
     const correct = options().find(
@@ -115,7 +115,7 @@ describe('the quiz', () => {
   it('marks a wrong answer without hiding the right one', async () => {
     const user = userEvent.setup()
     renderQuiz()
-    await selectRow(user, 'K-row')
+    await selectRow(user, 'K')
 
     const answer = currentAnswer()
     const wrong = options().find(
@@ -135,7 +135,7 @@ describe('the quiz', () => {
   it('locks the options once an answer is committed', async () => {
     const user = userEvent.setup()
     renderQuiz()
-    await selectRow(user, 'K-row')
+    await selectRow(user, 'K')
 
     const [first] = options()
     expect(first).toBeDefined()
@@ -149,7 +149,7 @@ describe('the quiz', () => {
     const user = userEvent.setup()
     renderQuiz()
     // Three characters keeps the walk short; the や-row has gaps too.
-    await selectRow(user, 'Y-row')
+    await selectRow(user, 'Y')
 
     for (let i = 0; i < 3; i++) {
       expect(screen.getByText(`Question ${String(i + 1)} of 3`)).toBeInTheDocument()
@@ -171,7 +171,7 @@ describe('the quiz', () => {
   it('starts a fresh round without losing the deck', async () => {
     const user = userEvent.setup()
     renderQuiz()
-    await selectRow(user, 'Y-row')
+    await selectRow(user, 'Y')
 
     for (let i = 0; i < 3; i++) {
       const [first] = options()

@@ -12,7 +12,7 @@ import { usePronunciation } from '../lib/usePronunciation'
 import { PronunciationNote } from '../components/SpeakButton'
 import { QuizCard } from '../components/QuizCard'
 import { EmptyDeck } from '../components/EmptyDeck'
-import { Button, ButtonLink, Chip, Label } from '../components/ui/primitives'
+import { Button, ButtonLink, Chip, HeadingLabel } from '../components/ui/primitives'
 
 export function Quiz() {
   const deck = useDeck()
@@ -84,9 +84,9 @@ function Round({ deck, onAgain }: { deck: Character[]; onAgain: () => void }) {
   return (
     <section className="flex flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <Label>
+        <HeadingLabel>
           Question {index + 1} of {questions.length}
-        </Label>
+        </HeadingLabel>
         <Chip>{score} correct</Chip>
       </header>
 
@@ -119,7 +119,7 @@ function RoundSummary({
 }) {
   return (
     <section className="flex flex-col items-start gap-4">
-      <Label>Round complete</Label>
+      <HeadingLabel>Round complete</HeadingLabel>
       <p className="m-0 font-sans text-5xl font-semibold text-ink-0">
         {score} / {total}
       </p>

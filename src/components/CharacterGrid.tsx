@@ -24,6 +24,14 @@ function idsIn(row: CharacterRow): string[] {
   return row.cells.filter((cell) => cell !== null).map((cell) => cell.id)
 }
 
+/**
+ * "K-row" reads as a heading in the chart but only "K" fits the label column.
+ * The accessible name is built from this same string so the two never diverge.
+ */
+function shortLabel(label: string): string {
+  return label.replace('-row', '')
+}
+
 /** Column template: one narrow label column, then one per vowel. */
 function columnStyle(columns: number) {
   return { gridTemplateColumns: `3.25rem repeat(${columns}, minmax(0, 1fr))` }
@@ -66,12 +74,14 @@ function MatrixGrid({ set }: { set: CharacterSet }) {
             <button
               type="button"
               onClick={() => (full ? deck.deselect(ids) : deck.select(ids))}
-              aria-label={`${full ? 'Clear' : 'Select'} the ${row.label}`}
+              // Opens with the VISIBLE text, so the accessible name and what a
+              // voice-control user can read agree (Phase 7 audit).
+              aria-label={`${shortLabel(row.label)} row, ${full ? 'clear all' : 'select all'}`}
               className="flex cursor-pointer items-center justify-center rounded-sm px-0.5 text-center font-sans text-label leading-tight tracking-[0.08em] text-ink-2 uppercase transition-colors hover:bg-accent-soft hover:text-ink-0"
             >
               {/* The row label is the control. "K-row" reads as a heading but
                   behaves as select/clear, which the aria-label makes explicit. */}
-              {row.label.replace('-row', '')}
+              {shortLabel(row.label)}
             </button>
 
             {row.cells.map((cell, index) =>
@@ -111,7 +121,7 @@ function FlowGrid({ set }: { set: CharacterSet }) {
             <button
               type="button"
               onClick={() => (full ? deck.deselect(ids) : deck.select(ids))}
-              aria-label={`${full ? 'Clear' : 'Select'} ${row.label}`}
+              aria-label={`${row.label}, ${full ? 'clear all' : 'select all'}`}
               className="self-start cursor-pointer rounded-sm font-sans text-label tracking-[0.08em] text-ink-2 uppercase transition-colors hover:text-ink-0"
             >
               {row.label}

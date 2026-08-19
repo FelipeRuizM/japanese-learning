@@ -53,13 +53,13 @@ describe('CharacterGrid — matrix layout', () => {
     const user = userEvent.setup()
     renderGrid(DEFAULT_CHARACTER_SET)
 
-    await user.click(screen.getByRole('button', { name: 'Select the K-row' }))
+    await user.click(screen.getByRole('button', { name: 'K row, select all' }))
     expect(
       cells().filter((c) => c.getAttribute('aria-pressed') === 'true'),
     ).toHaveLength(5)
 
     // The same control now offers the opposite action — that is the toggle.
-    await user.click(screen.getByRole('button', { name: 'Clear the K-row' }))
+    await user.click(screen.getByRole('button', { name: 'K row, clear all' }))
     expect(
       cells().filter((c) => c.getAttribute('aria-pressed') === 'true'),
     ).toHaveLength(0)
@@ -73,7 +73,7 @@ describe('CharacterGrid — matrix layout', () => {
     const user = userEvent.setup()
     renderGrid(DEFAULT_CHARACTER_SET)
 
-    await user.click(screen.getByRole('button', { name: 'Select the Y-row' }))
+    await user.click(screen.getByRole('button', { name: 'Y row, select all' }))
     expect(
       cells().filter((c) => c.getAttribute('aria-pressed') === 'true'),
     ).toHaveLength(3)
@@ -99,7 +99,7 @@ describe('CharacterGrid — flow layout', () => {
     expect(FLOW_FIXTURE.columns).toHaveLength(0)
     expect(cells()).toHaveLength(3)
 
-    await user.click(screen.getByRole('button', { name: 'Select Numbers' }))
+    await user.click(screen.getByRole('button', { name: 'Numbers, select all' }))
     expect(cells().every((c) => c.getAttribute('aria-pressed') === 'true')).toBe(true)
   })
 })

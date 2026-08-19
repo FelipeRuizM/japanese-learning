@@ -3,12 +3,15 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-19.** Phase 5 shipped as **v1.6** — flashcards, the one feature
-> that had been skipped. **All five features in §1 are now built.** (v1.0 scaffold; v1.1
-> reversed the design system to dark only, see §7; v1.2 the character model and data;
-> v1.3 the grid and deck; v1.4 pronunciation; v1.5 the quiz.)
+> **Status — 2026-08-19. The build is complete at v1.7.** All seven phases are done and
+> all five features in §1 are built. (v1.0 scaffold; v1.1 reversed the design system to
+> dark only, see §7; v1.2 the character model and data; v1.3 the grid and deck; v1.4
+> pronunciation; v1.5 the quiz; v1.6 flashcards; v1.7 the quality pass.)
 >
-> Only **Phase 7, the quality pass**, remains.
+> **It has never been deployed** — the repository has no GitHub remote, so the Actions
+> workflow has never run. That is the only thing standing between this and a live site.
+>
+> Katakana is the natural next addition: a data module plus one registry entry (§1).
 
 ---
 
@@ -477,6 +480,22 @@ kept current. **A component that is not in the styleguide is not done.**
 - Keyboard accessible end to end, real focus states, semantic headings.
 - **Lighthouse: performance and accessibility ≥ 90 on mobile.** axe clean on every route.
 - **No console errors or warnings in a clean run.**
+
+> **`scripts/audit-a11y.mjs` is how the last three are measured.** It is deliberately
+> not part of `npm test`: Playwright, axe-core and Lighthouse are a large install and a
+> browser download, and putting them in `devDependencies` would slow every `npm ci` for
+> a check that is run on purpose rather than on every commit. The script's header
+> carries the run instructions and the last recorded result.
+>
+> **Two defects it found that the unit tests could not**, both fixed in v1.7:
+>
+> 1. **Flashcards and the quiz had no `h2`** once a deck existed — only the site-wide
+>    `h1`. A _missing_ heading is not a WCAG violation, so axe was silent; only reading
+>    the document outline caught it. `src/pages/headings.test.tsx` now guards it.
+> 2. **The grid cell's `aria-label` did not match its own visible text.** The label was
+>    added in v1.3 to stop a screen reader running "かka" together — and in doing so it
+>    broke the match a voice-control user depends on. Fixed at the source, by putting a
+>    real space between the two children, rather than by overriding the name.
 
 ---
 

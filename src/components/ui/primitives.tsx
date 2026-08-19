@@ -18,6 +18,27 @@ export function Label({ children }: { children: ReactNode }) {
   )
 }
 
+/**
+ * A page heading that carries the LABEL's visual weight.
+ *
+ * Flashcards and the quiz put the glyph front and centre, and chrome recedes
+ * (CLAUDE.md §7) — but a route still needs a heading, and those two had only
+ * the site-wide `h1`. Rather than bolting a large title onto a deliberately
+ * spare page, the position indicator that was already there becomes the
+ * heading: "Card 3 of 5" tells a screen-reader user navigating by heading
+ * where they actually are, which "Flashcards" (already in the nav) does not.
+ *
+ * Visually identical to `Label`. The change is entirely in the document
+ * outline.
+ */
+export function HeadingLabel({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="m-0 font-sans text-label font-medium tracking-[0.08em] text-ink-2 uppercase">
+      {children}
+    </h2>
+  )
+}
+
 /** The only horizontal separator. Separation is whitespace and hairlines. */
 export function Rule() {
   return <hr className="my-0 h-px w-full border-0 bg-rule" />

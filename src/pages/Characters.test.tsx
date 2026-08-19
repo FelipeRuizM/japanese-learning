@@ -58,11 +58,11 @@ describe('the characters page', () => {
     const user = userEvent.setup()
     renderPage()
 
-    await user.click(screen.getByRole('button', { name: 'Select the S-row' }))
+    await user.click(screen.getByRole('button', { name: 'S row, select all' }))
     expect(screen.getByText('5 of 46 selected')).toBeInTheDocument()
 
     // The や-row has two gaps, so it contributes three, not five.
-    await user.click(screen.getByRole('button', { name: 'Select the Y-row' }))
+    await user.click(screen.getByRole('button', { name: 'Y row, select all' }))
     expect(screen.getByText('8 of 46 selected')).toBeInTheDocument()
   })
 })

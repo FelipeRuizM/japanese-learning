@@ -8,13 +8,17 @@ import { Glyph } from './ui/primitives'
  * with a click handler: the semantics are "a control that is on or off", which
  * is what `aria-pressed` says and what gets keyboard support for free.
  *
- * The accessible name is set explicitly rather than left to the concatenation
- * of the two child elements, which produces "かka" with no separator — correct
- * to the spec, unhelpful when spoken. With the label, a screen reader announces
- * "か ka, pressed".
+ * The two children are separated by a real space in the DOM, so the computed
+ * accessible name is "か ka" and a screen reader announces "か ka, pressed"
+ * rather than running them together as "かka".
  *
- * Romaji is also on screen, for the reason a beginner needs it: they cannot yet
- * read the thing they are being asked to choose.
+ * An explicit `aria-label` did the same job until the Phase 7 audit caught what
+ * it cost: the VISIBLE text was still "かka", so the label no longer matched it,
+ * and a voice-control user saying what they can see would miss. Fixing the
+ * source of the name rather than overriding it keeps both readings identical.
+ *
+ * Romaji is on screen for the reason a beginner needs it: they cannot yet read
+ * the thing they are being asked to choose.
  */
 export function GridCell({
   character,
@@ -29,7 +33,6 @@ export function GridCell({
     <button
       type="button"
       aria-pressed={selected}
-      aria-label={`${character.glyph} ${character.romaji}`}
       onClick={() => onToggle(character.id)}
       className={[
         'flex w-full min-h-14 cursor-pointer flex-col items-center justify-center gap-0.5',
@@ -40,6 +43,7 @@ export function GridCell({
       ].join(' ')}
     >
       <Glyph size="sm">{character.glyph}</Glyph>
+      {/* A real space, so the accessible name is "か ka" and not "かka". */}{' '}
       <span
         className={[
           'font-sans text-label tracking-[0.08em]',

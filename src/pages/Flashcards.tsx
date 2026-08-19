@@ -7,7 +7,7 @@ import { usePronunciation } from '../lib/usePronunciation'
 import { PronunciationNote } from '../components/SpeakButton'
 import { Flashcard } from '../components/Flashcard'
 import { EmptyDeck } from '../components/EmptyDeck'
-import { Button, Label } from '../components/ui/primitives'
+import { Button, HeadingLabel, Label } from '../components/ui/primitives'
 
 export function Flashcards() {
   const deck = useDeck()
@@ -58,9 +58,9 @@ function Cards({ deck }: { deck: Character[] }) {
   return (
     <section className="flex flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <Label>
+        <HeadingLabel>
           Card {index + 1} of {cards.length}
-        </Label>
+        </HeadingLabel>
         <Label>{revealed ? 'Showing the reading' : 'Tap the card to reveal'}</Label>
       </header>
 

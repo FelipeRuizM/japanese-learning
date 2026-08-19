@@ -36,7 +36,7 @@ describe('flashcards', () => {
   it('shows one card per selected character', async () => {
     const user = userEvent.setup()
     renderCards()
-    await user.click(screen.getByRole('button', { name: 'Select the K-row' }))
+    await user.click(screen.getByRole('button', { name: 'K row, select all' }))
 
     expect(screen.getByText('Card 1 of 5')).toBeInTheDocument()
   })
@@ -49,7 +49,7 @@ describe('flashcards', () => {
   it('keeps the reading out of the accessible name until it is revealed', async () => {
     const user = userEvent.setup()
     renderCards()
-    await user.click(screen.getByRole('button', { name: 'Select the K-row' }))
+    await user.click(screen.getByRole('button', { name: 'K row, select all' }))
 
     expect(card()).toHaveAccessibleName(/^Show the reading for .$/)
 
@@ -60,7 +60,7 @@ describe('flashcards', () => {
   it('reveals the example words only once flipped', async () => {
     const user = userEvent.setup()
     renderCards()
-    await user.click(screen.getByRole('button', { name: 'Select the K-row' }))
+    await user.click(screen.getByRole('button', { name: 'K row, select all' }))
 
     expect(screen.queryByText('Used in')).not.toBeInTheDocument()
 
@@ -73,7 +73,7 @@ describe('flashcards', () => {
   it('offers a replay control on the revealed side', async () => {
     const user = userEvent.setup()
     renderCards()
-    await user.click(screen.getByRole('button', { name: 'Select the K-row' }))
+    await user.click(screen.getByRole('button', { name: 'K row, select all' }))
     await user.click(card())
 
     expect(screen.getByText('Play again')).toBeInTheDocument()
@@ -82,7 +82,7 @@ describe('flashcards', () => {
   it('walks forward and back, and stops at both ends', async () => {
     const user = userEvent.setup()
     renderCards()
-    await user.click(screen.getByRole('button', { name: 'Select the Y-row' }))
+    await user.click(screen.getByRole('button', { name: 'Y row, select all' }))
 
     expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
 
@@ -101,7 +101,7 @@ describe('flashcards', () => {
   it('turns the next card face down', async () => {
     const user = userEvent.setup()
     renderCards()
-    await user.click(screen.getByRole('button', { name: 'Select the Y-row' }))
+    await user.click(screen.getByRole('button', { name: 'Y row, select all' }))
 
     await user.click(card())
     expect(screen.getByText('Used in')).toBeInTheDocument()
@@ -114,7 +114,7 @@ describe('flashcards', () => {
   it('flips back to the front', async () => {
     const user = userEvent.setup()
     renderCards()
-    await user.click(screen.getByRole('button', { name: 'Select the K-row' }))
+    await user.click(screen.getByRole('button', { name: 'K row, select all' }))
 
     await user.click(card())
     await user.click(flippedCard())
@@ -125,7 +125,7 @@ describe('flashcards', () => {
   it('draws its cards from the deck, and only the deck', async () => {
     const user = userEvent.setup()
     renderCards()
-    await user.click(screen.getByRole('button', { name: 'Select the Y-row' }))
+    await user.click(screen.getByRole('button', { name: 'Y row, select all' }))
 
     const yRow = allCharacters(DEFAULT_CHARACTER_SET).filter((c) => c.rowId === 'y')
     const glyphs = new Set(yRow.map((c) => c.glyph))
