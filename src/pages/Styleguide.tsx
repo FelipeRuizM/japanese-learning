@@ -1,5 +1,16 @@
 import type { ReactNode } from 'react'
-import { Button, Chip, Glyph, Label, Rule } from '../components/ui/primitives'
+import type { Character } from '../types/characters'
+import { CharacterGrid } from '../components/CharacterGrid'
+import { GridCell, GridGap } from '../components/GridCell'
+import { FLOW_FIXTURE } from '../characters/flowFixture'
+import {
+  Button,
+  ButtonLink,
+  Chip,
+  Glyph,
+  Label,
+  Rule,
+} from '../components/ui/primitives'
 
 /**
  * Every token and every component in isolation, so the system can be reviewed
@@ -27,6 +38,27 @@ const MEANING = [
   { token: 'positive', contrast: '12.90:1', use: 'quiz: correct' },
   { token: 'negative', contrast: '5.80:1', use: 'quiz: wrong — never filled' },
 ] as const
+
+/** Stand-ins for the grid-cell section — the styleguide names no script. */
+const SAMPLE = {
+  id: 'sample:ka',
+  script: FLOW_FIXTURE.id,
+  glyph: 'か',
+  romaji: 'ka',
+  rowId: 'sample',
+  vowel: 'a',
+  examples: [{ kana: 'かさ', romaji: 'kasa', english: 'umbrella' }],
+} as const satisfies Character
+
+const SAMPLE_N = {
+  id: 'sample:nn',
+  script: FLOW_FIXTURE.id,
+  glyph: 'ん',
+  romaji: 'n',
+  rowId: 'sample',
+  vowel: null,
+  examples: [{ kana: 'みかん', romaji: 'mikan', english: 'mandarin orange' }],
+} as const satisfies Character
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -109,6 +141,32 @@ export function Styleguide() {
         </div>
       </Section>
 
+      <Section title="Grid cell">
+        <div className="grid max-w-xs grid-cols-4 gap-1.5">
+          <GridCell character={SAMPLE} selected={false} onToggle={() => undefined} />
+          <GridCell character={SAMPLE} selected onToggle={() => undefined} />
+          <GridGap />
+          <GridCell character={SAMPLE_N} selected={false} onToggle={() => undefined} />
+        </div>
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          Unselected, selected, a gap, and ん. The gap is empty space rather than a
+          disabled button — there is no character there to disable, and collapsing it
+          would change the shape of the chart.
+        </p>
+      </Section>
+
+      <Section title="Grid: the flow layout">
+        <CharacterGrid set={FLOW_FIXTURE} />
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          The second of <code>CharacterGrid</code>&rsquo;s two layout branches, kept
+          alive by a fixture so it is a capability rather than a claim. A set with no
+          vowel columns lays its characters out in groups instead of a matrix — and a
+          grid that hardcoded five columns is exactly what would need rewriting. These
+          glyphs fall back to the OS face: the shipped webfont is kana-only, so this is
+          also what a missing glyph looks like.
+        </p>
+      </Section>
+
       <Section title="Type">
         <div className="flex flex-col gap-3">
           <p className="m-0 text-ink-1">
@@ -144,6 +202,7 @@ export function Styleguide() {
           <Button variant="primary">Primary</Button>
           <Button>Quiet</Button>
           <Button disabled>Disabled</Button>
+          <ButtonLink to="/">Link as button</ButtonLink>
           <Chip>15 selected</Chip>
         </div>
         <p className="m-0 max-w-prose text-sm text-ink-2">

@@ -3,10 +3,9 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-19.** Phase 2 shipped as **v1.2** — the character model, the 46
-> gojūon with 51 example words, the registry, and the leak test. (v1.0 was the scaffold;
-> v1.1 reversed the design system to dark only — see §7.) Nothing renders the data yet;
-> the grid is Phase 3.
+> **Status — 2026-08-19.** Phase 3 shipped as **v1.3** — the selection grid and the
+> deck. (v1.0 scaffold; v1.1 reversed the design system to dark only, see §7; v1.2 the
+> character model and data.) Flashcards are Phase 5, the quiz Phase 6.
 
 ---
 
@@ -275,7 +274,10 @@ plus `toggle`, `selectRow`, `selectAll`, `clear`.
   of at least 44px.
 - Selected cells invert: paper glyph on indigo.
 - Gaps in the matrix are rendered as empty space (§3.2).
-- Row labels double as per-row select/clear controls.
+- Row labels double as per-row select/clear controls, so **every row label must be
+  unique** — the label becomes the control's accessible name, and the な-row and ん
+  both want to be called "N". ん is **"Final N"** for that reason, and a test pins
+  label uniqueness.
 - A persistent count of what is selected, and links to Flashcards and Quiz.
 
 ### Flashcards

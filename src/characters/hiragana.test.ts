@@ -68,6 +68,16 @@ describe('the gojūon', () => {
     expect(collisions[0]?.[1]?.sort()).toEqual(['お', 'を'].sort())
   })
 
+  /**
+   * Row labels double as the select/clear control and become its accessible
+   * name, so two rows sharing one makes the control ambiguous. The な-row and
+   * ん both want to be called "N"; ん is "Final N" for exactly this reason.
+   */
+  it('gives every row a distinct label', () => {
+    const labels = HIRAGANA.rows.map((row) => row.label)
+    expect(new Set(labels).size).toBe(labels.length)
+  })
+
   it('gives ん no vowel, and every other character one', () => {
     const withoutVowel = characters.filter((c) => c.vowel === null)
     expect(withoutVowel.map((c) => c.glyph)).toEqual(['ん'])

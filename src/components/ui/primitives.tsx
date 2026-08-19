@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 
 /**
  * The shared primitives. Every one of them appears in /styleguide — a component
@@ -22,29 +23,67 @@ export function Rule() {
   return <hr className="my-0 h-px w-full border-0 bg-rule" />
 }
 
+type Variant = 'primary' | 'quiet'
+
+/**
+ * The one place button styling is defined. `Button` and `ButtonLink` share it
+ * so a link that looks like a button cannot drift from a real one.
+ *
+ * Not exported: a caller reaching for the class string is a caller about to
+ * build a fourth kind of button.
+ */
+function buttonClasses(variant: Variant, extra: string): string {
+  const base =
+    'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md ' +
+    'px-4 font-sans text-base font-medium no-underline transition-colors ' +
+    'disabled:cursor-not-allowed disabled:border-rule disabled:bg-transparent ' +
+    'disabled:text-ink-3'
+
+  const variants: Record<Variant, string> = {
+    primary:
+      'border border-accent bg-accent text-ground hover:border-ink-0 hover:bg-ink-0',
+    quiet: 'border border-rule bg-transparent text-ink-1 hover:bg-accent-soft',
+  }
+
+  return `${base} ${variants[variant]} ${extra}`
+}
+
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   /**
    * `primary` fills with the accent — it is the one filled treatment in the
    * app. `quiet` is the default: text and a hairline, so a row of controls
    * doesn't shout over the glyphs it sits beside.
    */
-  variant?: 'primary' | 'quiet'
+  variant?: Variant
 }
 
 export function Button({ variant = 'quiet', className = '', ...rest }: ButtonProps) {
-  const base =
-    'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md ' +
-    'px-4 font-sans text-base font-medium transition-colors ' +
-    'disabled:cursor-not-allowed disabled:border-rule disabled:bg-transparent ' +
-    'disabled:text-ink-3'
+  return <button className={buttonClasses(variant, className)} {...rest} />
+}
 
-  const variants = {
-    primary:
-      'border border-accent bg-accent text-ground hover:bg-ink-0 hover:border-ink-0',
-    quiet: 'border border-rule bg-transparent text-ink-1 hover:bg-accent-soft',
-  } as const
-
-  return <button className={`${base} ${variants[variant]} ${className}`} {...rest} />
+/**
+ * A navigation control that looks like a button.
+ *
+ * It renders a real `<Link>`, so it is a link to a screen reader, is
+ * middle-clickable, and shows its target on hover. Styling a `<button>` and
+ * calling `navigate()` would look identical and be none of those things.
+ */
+export function ButtonLink({
+  to,
+  variant = 'quiet',
+  className = '',
+  children,
+}: {
+  to: string
+  variant?: Variant
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <Link to={to} className={buttonClasses(variant, className)}>
+      {children}
+    </Link>
+  )
 }
 
 /**

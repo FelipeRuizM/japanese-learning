@@ -1,6 +1,7 @@
 import { lazy } from 'react'
 import { createHashRouter, RouterProvider } from 'react-router-dom'
 import { AppLayout } from './components/layout/AppLayout'
+import { DeckProvider } from './data/DeckProvider'
 import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 import { Characters } from './pages/Characters'
 
@@ -40,5 +41,12 @@ const router = createHashRouter([
 ])
 
 export function App() {
-  return <RouterProvider router={router} />
+  // The deck lives ABOVE the router, so a selection survives navigating between
+  // the grid, the flashcards and the quiz. It does not survive a refresh, and
+  // that is the design (CLAUDE.md §10).
+  return (
+    <DeckProvider>
+      <RouterProvider router={router} />
+    </DeckProvider>
+  )
 }

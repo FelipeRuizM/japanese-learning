@@ -233,7 +233,10 @@ const ROWS: CharacterRow[] = [
    */
   {
     id: 'nn',
-    label: 'N',
+    // NOT "N": the な-row is already labelled that, and two rows sharing a
+    // label makes the chart ambiguous and the row's select/clear control
+    // indistinguishable to a screen reader. A test pins labels as unique.
+    label: 'Final N',
     cells: [
       {
         id: `${SCRIPT}:nn`,

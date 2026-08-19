@@ -8,14 +8,14 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-08-19
 
-Phases 0, 1 and 2 are done. **Deployed as v1.2.**
+Phases 0 through 3 are done. **Deployed as v1.3.**
 
 Between phases 1 and 2 the owner asked for **dark mode only**, reversing the light
 "paper and ink" direction v1.0 shipped with. The palette was re-derived and re-measured
 against the new ground rather than flipped by eye; `CLAUDE.md` §7 records both the
 reversal and the colourblind sweep behind it. Shipped as **v1.1**.
 
-**Phase 3 is next.**
+**Phase 4 is next.**
 
 Four decisions were taken with the owner before any code, and are folded into
 `CLAUDE.md`:
@@ -107,20 +107,42 @@ nothing else.
   it beside the code would have meant letting `process` and `node:fs` into the app's
   type environment to satisfy one test.
 
-## Phase 3 — Selection grid and deck state
+## Phase 3 — Selection grid and deck state ✅
 
-- [ ] `DeckProvider` + `useDeck` — `Set<string>` of ids, `toggle`, `selectRow`,
-      `selectAll`, `clear`. **In memory only**; no storage of any kind
-- [ ] `CharacterGrid` branching on `set.layout` — `matrix` today, `flow` written and
-      exercised by a fixture set in the styleguide so the kanji path is not theoretical
-- [ ] `GridCell` — `aria-pressed` toggle button, ≥44px target, real focus ring, selected
-      state inverts to paper-on-indigo
-- [ ] Gaps render as empty space, never as a disabled cell
-- [ ] Row labels double as per-row select/clear; global select all / clear
-- [ ] Persistent deck count with links through to Flashcards and Quiz
-- [ ] Deck reducer tests; grid interaction tests
-- [ ] 375px-first, then desktop
-- [ ] `feat: character grid and deck selection`
+- [x] `DeckProvider` + `useDeck` — `Set<string>` of ids, `toggle`, `select`, `deselect`,
+      `clear`. **In memory only**; no storage of any kind
+- [x] The reducer is pure and lives apart from the provider (`src/data/deck.ts`), and
+      **returns the same object on a no-op** so React can skip re-rendering all 46 cells
+      when an already-full row is pressed — which happens, because the row label is a
+      toggle
+- [x] `CharacterGrid` branching on `set.layout`; the `flow` branch is exercised by
+      `FLOW_FIXTURE` on /styleguide **and by a test**, so the no-matrix path is a
+      capability rather than a claim
+- [x] `GridCell` — `aria-pressed` toggle button, explicit accessible name, ≥44px target,
+      selected state inverts to ground-on-accent
+- [x] Gaps render as empty space, never as a disabled cell
+- [x] Row labels double as per-row select/clear; global select all / clear
+- [x] Persistent deck count; through-links to Flashcards and Quiz appear only once
+      something is selected, since with an empty deck they open onto an empty state
+- [x] `ButtonLink` primitive — a real `<Link>` sharing the button's styling, so a
+      navigation control is a link to a screen reader rather than a styled button
+- [x] Deck reducer tests, grid interaction tests, page-level tests
+- [x] **Verified in a real browser at 375px**, not only in jsdom: 46 cells, none under
+      44px, zero horizontal overflow, kana drawn in the shipped webfont, no console
+      errors, and the selected cell measured at the validated ground-on-accent pair
+- [x] `feat: character grid and deck selection`
+
+**Deployed as 1.3.** 48 tests across 8 files. Bundle 93.85 KB gzip.
+
+**Three things the browser caught that jsdom could not:**
+
+- **Two rows both displayed "N"** — the な-row and ん. Ambiguous on screen and worse as
+  an accessible name ("Select the N-row" vs "Select the N"). ん is now **"Final N"**,
+  and a test pins row-label uniqueness.
+- The label column was too narrow for the longest label and needed widening.
+- A selected cell measured as _translucent_ accent — which turned out to be
+  `transition-colors` caught mid-flight, not a bug. Settled, it is the validated
+  7.93:1 ground-on-accent pair. Worth knowing before someone "fixes" it.
 
 ## Phase 4 — Pronunciation
 
