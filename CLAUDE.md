@@ -3,8 +3,9 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-19.** Phase 0. The spec and the plan exist; no application code
-> does. Phase 1 can start.
+> **Status — 2026-08-19.** Phase 1 shipped as **v1.0** — scaffold, token layer,
+> styleguide and the Pages pipeline. The site is live and empty; no character data
+> exists yet. Phase 2 is next.
 
 ---
 
@@ -54,16 +55,16 @@ kanji means that plus using the `layout: 'flow'` branch that already exists.
 
 ## 2. Stack and deployment
 
-| Concern | Choice |
-|---|---|
-| Build | Vite + React + **TypeScript strict** |
-| Styling | Tailwind CSS v4 via `@tailwindcss/vite`, extending `src/styles/tokens.css` |
-| Routing | **HashRouter** — GitHub Pages has no SPA rewrite. Never `BrowserRouter`. |
-| State | Plain hooks + one context. **No state management library.** |
-| Tests | Vitest + Testing Library, jsdom |
-| Lint / format | oxlint + prettier |
-| Hosting | GitHub Pages via GitHub Actions on push to `main` |
-| Base path | `base: '/japanese-learning/'` in `vite.config.ts` |
+| Concern       | Choice                                                                     |
+| ------------- | -------------------------------------------------------------------------- |
+| Build         | Vite + React + **TypeScript strict**                                       |
+| Styling       | Tailwind CSS v4 via `@tailwindcss/vite`, extending `src/styles/tokens.css` |
+| Routing       | **HashRouter** — GitHub Pages has no SPA rewrite. Never `BrowserRouter`.   |
+| State         | Plain hooks + one context. **No state management library.**                |
+| Tests         | Vitest + Testing Library, jsdom                                            |
+| Lint / format | oxlint + prettier                                                          |
+| Hosting       | GitHub Pages via GitHub Actions on push to `main`                          |
+| Base path     | `base: '/japanese-learning/'` in `vite.config.ts`                          |
 
 - **No backend, no API, no environment variables.** The app is a static bundle with its
   data compiled in. This is deliberate and is what keeps it deployable to Pages with no
@@ -73,6 +74,11 @@ kanji means that plus using the `layout: 'flow'` branch that already exists.
   hard by hand; nothing here needs them.
 - TypeScript is strict **plus** `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`,
   `noImplicitOverride`, `noUnusedLocals`, `noUnusedParameters`. **No `any`. Anywhere.**
+- **`subset-font` is the one devDependency added beyond the stack**, and it never ships.
+  It exists because `@fontsource/noto-sans-jp` serves its `japanese` subset as a single
+  ~1 MB woff2 with no unicode-range splitting, so a browser fetches the whole CJK set to
+  draw one kana. `scripts/subset-jp-font.mjs` cuts that to **43.5 KB** and the result is
+  **committed under `src/assets/fonts/`**, so CI needs no font tooling to build.
 
 > If the GitHub repo is given a name other than `japanese-learning`, `base` and the
 > workflow change **together**. A wrong `base` is the classic Pages failure: the page
@@ -89,32 +95,32 @@ export type ScriptId = 'hiragana' | 'katakana' | 'kanji'
 export type Vowel = 'a' | 'i' | 'u' | 'e' | 'o'
 
 export type ExampleWord = {
-  kana: string      // ねこ — kana only, never kanji (§3.4)
-  romaji: string    // neko
-  english: string   // cat
+  kana: string // ねこ — kana only, never kanji (§3.4)
+  romaji: string // neko
+  english: string // cat
 }
 
 export type Character = {
-  id: string              // 'hiragana:ka' — script-qualified so sets cannot collide
+  id: string // 'hiragana:ka' — script-qualified so sets cannot collide
   script: ScriptId
-  glyph: string           // か
-  romaji: string          // ka
-  rowId: string           // 'k'
-  vowel: Vowel | null     // null for ん
+  glyph: string // か
+  romaji: string // ka
+  rowId: string // 'k'
+  vowel: Vowel | null // null for ん
   examples: ExampleWord[] // at least one — enforced by a test
-  audio?: string          // static file path. Absent → speech synthesis (§4)
+  audio?: string // static file path. Absent → speech synthesis (§4)
 }
 
 export type CharacterRow = {
   id: string
-  label: string                 // 'K-row'
-  cells: (Character | null)[]   // null is a REAL gap, not padding
+  label: string // 'K-row'
+  cells: (Character | null)[] // null is a REAL gap, not padding
 }
 
 export type CharacterSet = {
   id: ScriptId
   label: string
-  columns: readonly Vowel[]     // empty for a set with no matrix
+  columns: readonly Vowel[] // empty for a set with no matrix
   layout: 'matrix' | 'flow'
   rows: CharacterRow[]
 }
@@ -131,7 +137,7 @@ export type CharacterSet = {
   A grid that hardcodes a five-column matrix is the thing that would need rewriting, so
   the grid branches on `set.layout` from day one. **Two branches, and no more.**
 - **`cells` may contain `null`, and `null` means a genuine gap** — the や-row has no
-  *yi* or *ye*, the わ-row has no *wi*/*wu*/*we*. Gaps render as empty space, never as a
+  _yi_ or _ye_, the わ-row has no _wi_/_wu_/_we_. Gaps render as empty space, never as a
   disabled character and never collapsed away, because the shape of the chart is part of
   what is being learned.
 
@@ -160,7 +166,7 @@ n        ん
 > Layout uses the cell position; the quiz uses `vowel`. Nothing downstream is misled.
 
 Romaji follows **Hepburn**: `shi`, `chi`, `tsu`, `fu`, and `を` is romanised **`o`**
-(its pronunciation) with the note that it is written *wo*. The quiz answers on
+(its pronunciation) with the note that it is written _wo_. The quiz answers on
 pronunciation, so `お` and `を` would collide — see §6.
 
 ### 3.4 Example words — the rules
@@ -173,8 +179,8 @@ pronunciation, so `お` and `を` would collide — see §6.
   study.
 - Two characters are exceptions and are documented here so nobody "fixes" them:
   - **を** is a grammatical particle and never appears inside a word. Its example is a
-    short phrase: `ほんをよむ` / *hon o yomu* / "to read a book".
-  - **ん** never appears word-initially. Its example is `みかん` / *mikan* /
+    short phrase: `ほんをよむ` / _hon o yomu_ / "to read a book".
+  - **ん** never appears word-initially. Its example is `みかん` / _mikan_ /
     "mandarin orange".
 - Example words appear on the **flashcard back** and on the **quiz answer reveal**. The
   grid cell's click is the select/deselect toggle, so grid cells carry no detail panel.
@@ -188,11 +194,11 @@ pronunciation, so `お` and `を` would collide — see §6.
 **There is no off-the-shelf, openly-licensed, coherently-recorded 46-kana audio set.**
 Checked 2026-08-19:
 
-| Source | Verdict |
-|---|---|
-| ThoughtCo hiragana guide | Dotdash Meredith editorial content, all rights reserved. No license to hotlink or redistribute. **Ruled out.** |
-| Wikimedia Commons `Ja-*.oga` | Only ~16 of 46 exist. Different speakers, mixed PD / CC BY-SA 3.0, and they are recordings of *words*, not isolated kana. **Ruled out as a set.** |
-| `tofugu/japanese-vocabulary-pronunciation-audio` | Genuinely reusable — CC BY-SA 4.0, native voice actors. But it is **vocabulary**, not kana. Keep as a future source for *example-word* audio; useless for character sounds. |
+| Source                                           | Verdict                                                                                                                                                                     |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ThoughtCo hiragana guide                         | Dotdash Meredith editorial content, all rights reserved. No license to hotlink or redistribute. **Ruled out.**                                                              |
+| Wikimedia Commons `Ja-*.oga`                     | Only ~16 of 46 exist. Different speakers, mixed PD / CC BY-SA 3.0, and they are recordings of _words_, not isolated kana. **Ruled out as a set.**                           |
+| `tofugu/japanese-vocabulary-pronunciation-audio` | Genuinely reusable — CC BY-SA 4.0, native voice actors. But it is **vocabulary**, not kana. Keep as a future source for _example-word_ audio; useless for character sounds. |
 
 **Do not re-litigate this without new evidence.** If a licensed set is found later,
 dropping it in is a data change (§4.2), not a rewrite.
@@ -342,25 +348,25 @@ are generated from the token layer by construction.
 :root {
   /* ground — warm paper. the only backgrounds that exist. */
   --color-ground: #faf7f2;
-  --color-sunken: #f1ebe1;   /* row bands, card backs */
-  --color-rule:   #ded5c8;   /* hairlines. NOT FOR TEXT — 1.36:1 */
+  --color-sunken: #f1ebe1; /* row bands, card backs */
+  --color-rule: #ded5c8; /* hairlines. NOT FOR TEXT — 1.36:1 */
 
   /* ink ramp */
-  --color-ink-3: #9c9184;    /* 2.89:1 — gaps and disabled only, NOT FOR TEXT */
-  --color-ink-2: #6b6257;    /* 5.60:1 — labels, metadata */
-  --color-ink-1: #3a342d;    /* 11.50:1 — prose */
-  --color-ink-0: #1a1714;    /* 16.70:1 — glyphs and headlines */
+  --color-ink-3: #9c9184; /* 2.89:1 — gaps and disabled only, NOT FOR TEXT */
+  --color-ink-2: #6b6257; /* 5.60:1 — labels, metadata */
+  --color-ink-1: #3a342d; /* 11.50:1 — prose */
+  --color-ink-0: #1a1714; /* 16.70:1 — glyphs and headlines */
 
   /* the one accent — selection and interaction. 7.97:1 on ground. */
-  --color-accent:      #2c4a8c;
-  --color-accent-soft: #e4e8f3;   /* hover wash, never text */
+  --color-accent: #2c4a8c;
+  --color-accent-soft: #e4e8f3; /* hover wash, never text */
 
   /* semantic — quiz feedback only. see the note below. */
-  --color-positive: #0e3f25;   /* 11.19:1 */
-  --color-negative: #c4472f;   /*  4.58:1 */
+  --color-positive: #0e3f25; /* 11.19:1 */
+  --color-negative: #c4472f; /*  4.58:1 */
 
   --radius-sm: 2px;
-  --radius-md: 4px;            /* nothing larger exists */
+  --radius-md: 4px; /* nothing larger exists */
 }
 ```
 

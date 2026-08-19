@@ -8,18 +8,19 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-08-19
 
-Phase 0 is done: `CLAUDE.md` and `PLAN.md` exist and the repo is initialised. No
-application code yet. **Phase 1 can start.**
+Phases 0 and 1 are done. The site builds, every asset resolves under the Pages base
+path, and `/styleguide` renders the whole token layer. **Deployed as v1.0.**
+**Phase 2 is next.**
 
 Four decisions were taken with the owner before any code, and are folded into
 `CLAUDE.md`:
 
-| | Decision | Where |
-|---|---|---|
-| **Audio** | Web Speech API, behind a provider interface, with a file provider written but unwired. No open 46-kana audio set exists — three candidate sources checked and ruled out. | §4 |
-| **Quiz** | Four-option multiple choice in both directions. Typing kana needs an IME, so typed answers cannot be symmetric. | §6 |
-| **Deck** | Starts empty. The empty state is a primary screen because a refresh always returns to it. | §5 |
-| **Design** | Its own paper-and-ink palette, same token discipline as the sibling app. | §7 |
+|            | Decision                                                                                                                                                                 | Where |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----- |
+| **Audio**  | Web Speech API, behind a provider interface, with a file provider written but unwired. No open 46-kana audio set exists — three candidate sources checked and ruled out. | §4    |
+| **Quiz**   | Four-option multiple choice in both directions. Typing kana needs an IME, so typed answers cannot be symmetric.                                                          | §6    |
+| **Deck**   | Starts empty. The empty state is a primary screen because a refresh always returns to it.                                                                                | §5    |
+| **Design** | Its own paper-and-ink palette, same token discipline as the sibling app.                                                                                                 | §7    |
 
 ---
 
@@ -30,32 +31,45 @@ Four decisions were taken with the owner before any code, and are folded into
 - [x] `git init`, `.gitignore`
 - [x] `docs: spec and phased build plan`
 
-## Phase 1 — Scaffold, tokens, styleguide, deploy pipeline
+## Phase 1 — Scaffold, tokens, styleguide, deploy pipeline ✅
 
 Ships an empty-but-live site, so a broken deploy is never diagnosed at the same time as
 broken application logic.
 
-- [ ] Vite + React + TypeScript **strict** scaffold, with `noUncheckedIndexedAccess`,
-      `exactOptionalPropertyTypes`, `noImplicitOverride`, `noUnusedLocals`,
-      `noUnusedParameters`
-- [ ] oxlint + prettier; vitest + Testing Library + jsdom, with a setup file
-- [ ] `base: '/japanese-learning/'` in `vite.config.ts`
-- [ ] Tailwind v4 via `@tailwindcss/vite`, reading `src/styles/tokens.css` through
+- [x] Vite 8 + React 19 + TypeScript 6 **strict** scaffold, with
+      `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`,
+      `noUnusedLocals`, `noUnusedParameters`
+- [x] oxlint + prettier; vitest + Testing Library + jsdom, with a setup file
+- [x] `base: '/japanese-learning/'` in `vite.config.ts`
+- [x] Tailwind v4 via `@tailwindcss/vite`, reading `src/styles/tokens.css` through
       `@theme inline` so utilities are generated from the token layer by construction
-- [ ] `tokens.css` with the **measured** values from `CLAUDE.md` §7 — every contrast
-      figure is in a comment; do not substitute colours by eye
-- [ ] **Noto Sans JP + IBM Plex Sans self-hosted** via `@fontsource`; measure the JP
-      transfer and record it. Verify a kana renders in Noto, not in the OS fallback
-- [ ] `HashRouter` shell: header with `APP_VERSION`, nav, route table, route-level error
-      boundary, 404
-- [ ] `/styleguide` rendering every token plus the first primitives (Button, Chip,
-      Label, hairline Rule, glyph scale)
-- [ ] `src/version.ts` — `APP_VERSION = '1.0'`
-- [ ] GitHub Actions: typecheck + lint + test + build, deploy to Pages on push to `main`
-- [ ] Deployed URL loads and `/styleguide` renders **with no asset 404s**
-- [ ] `feat: scaffold, design tokens, styleguide, and pages deploy`
+- [x] `tokens.css` with the **measured** values from `CLAUDE.md` §7 — every contrast
+      figure is in a comment
+- [x] **Noto Sans JP hand-subsetted to 43.5 KB**, IBM Plex Sans self-hosted.
+      @fontsource's own `japanese` subset is one ~1 MB woff2 with no unicode-range
+      split, which would have been the dominant asset on the site;
+      `scripts/subset-jp-font.mjs` cuts it by **95.6%** to the Hiragana + Katakana
+      blocks (194 glyphs) and the output is committed
+- [x] **Kana presence in the subset verified programmatically** — re-subsetting the
+      shipped file to あ / ん / を / ネ each yields a real outline, while 漢 collapses
+      to the empty baseline. Kana in, kanji out, as designed
+- [x] `HashRouter` shell (`createHashRouter`, so `useRouteError` has a data router):
+      header with `APP_VERSION`, nav, route table, route-level error boundary, 404
+- [x] `/styleguide` rendering every token plus the first primitives (Button, Chip,
+      Label, hairline Rule, Glyph scale, the semantic feedback pair)
+- [x] `src/version.ts` — `APP_VERSION = '1.0'`
+- [x] GitHub Actions: typecheck + lint + test + build, deploy to Pages on push to `main`
+- [x] **Every asset verified 200 under the base path** against a real preview server —
+      JS, CSS, all five fonts, the favicon, and a deep hash route
+- [x] `feat: scaffold, design tokens, styleguide, and pages deploy`
 
-## Phase 2 — Character model, hiragana data, and the registry  ·  *the hinge phase*
+**Deployed as 1.0.** Bundle: 91 KB gzip JS (React + Router), 4.1 KB gzip CSS, fonts
+loaded on demand by unicode-range.
+
+**Not done, deliberately:** the routes for Characters, Flashcards and Quiz are honest
+placeholders naming the phase that fills them. They do not pretend to work.
+
+## Phase 2 — Character model, hiragana data, and the registry · _the hinge phase_
 
 The abstraction is decided here. Everything after it consumes a `CharacterSet` and
 nothing else.

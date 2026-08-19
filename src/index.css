@@ -1,0 +1,103 @@
+/* Self-hosted IBM Plex Sans — no CDN request. An extra origin costs a
+   connection on the Lighthouse target (CLAUDE.md §8) and a silent fallback
+   would change the metrics the layout is built on. */
+@import '@fontsource/ibm-plex-sans/latin-400.css';
+@import '@fontsource/ibm-plex-sans/latin-500.css';
+@import '@fontsource/ibm-plex-sans/latin-600.css';
+
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+/* The kana face, hand-subsetted by scripts/subset-jp-font.mjs.
+
+   @fontsource's own `japanese` subset is a single ~1 MB woff2 — not split by
+   unicode-range, so a browser fetches the entire CJK set to draw か. The
+   subset here is 43.5 KB and covers the whole Hiragana + Katakana blocks,
+   which is every Japanese character this app can render (example words are
+   kana-only by CLAUDE.md §3.4).
+
+   The unicode-range is what makes the browser skip this file entirely on a
+   page with no kana on it. Keep it in sync with the script. */
+@font-face {
+  font-family: 'Noto Sans JP';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/noto-sans-jp-kana-400.woff2') format('woff2');
+  unicode-range: U+3000-303F, U+3040-30FF, U+FF5E;
+}
+
+@font-face {
+  font-family: 'Noto Sans JP';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./assets/fonts/noto-sans-jp-kana-700.woff2') format('woff2');
+  unicode-range: U+3000-303F, U+3040-30FF, U+FF5E;
+}
+
+/* Tailwind v4 reads design tokens from @theme. Because tokens.css already
+   declares them as --color-* / --font-* / --text-* custom properties, the
+   utility classes (bg-ground, text-ink-2, font-jp, text-glyph-lg …) are
+   generated straight from the token layer. That is the "Tailwind extends from
+   tokens" rule in CLAUDE.md §7, enforced by construction rather than by
+   convention. */
+@theme inline {
+  --color-ground: var(--color-ground);
+  --color-sunken: var(--color-sunken);
+  --color-rule: var(--color-rule);
+  --color-ink-3: var(--color-ink-3);
+  --color-ink-2: var(--color-ink-2);
+  --color-ink-1: var(--color-ink-1);
+  --color-ink-0: var(--color-ink-0);
+  --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-positive: var(--color-positive);
+  --color-negative: var(--color-negative);
+
+  --font-sans: var(--font-sans);
+  --font-jp: var(--font-jp);
+
+  --text-label: var(--text-label);
+  --text-glyph-sm: var(--text-glyph-sm);
+  --text-glyph-md: var(--text-glyph-md);
+  --text-glyph-lg: var(--text-glyph-lg);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+}
+
+html {
+  background: var(--color-ground);
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ground);
+  color: var(--color-ink-1);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Functional motion only (CLAUDE.md §7). Under reduced-motion everything
+   collapses to instant — including the flashcard flip, which is the one
+   animation in the app that carries meaning. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* A real focus ring, on the keyboard path only. Never remove it. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
