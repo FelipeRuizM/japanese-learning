@@ -13,7 +13,7 @@ export function Characters() {
         Choose what to study
       </h2>
       <p className="m-0 max-w-prose text-ink-1">
-        The selection grid arrives in Phase 3. It will show every hiragana character
+        The selection grid arrives in Phase 3. It will show every character in the set,
         organised by row, and tapping one adds it to your deck.
       </p>
     </section>

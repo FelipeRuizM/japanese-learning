@@ -3,9 +3,10 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-19.** Phase 1 shipped as **v1.0**. The design system was then
-> **reversed to dark only** at the owner's request (v1.1) — see §7. Phase 2 ships the
-> character model and the hiragana data.
+> **Status — 2026-08-19.** Phase 2 shipped as **v1.2** — the character model, the 46
+> gojūon with 51 example words, the registry, and the leak test. (v1.0 was the scaffold;
+> v1.1 reversed the design system to dark only — see §7.) Nothing renders the data yet;
+> the grid is Phase 3.
 
 ---
 
@@ -130,9 +131,17 @@ export type CharacterSet = {
 
 - `src/characters/registry.ts` exports `CHARACTER_SETS: CharacterSet[]` and
   `characterSetById(id)`. Hiragana is the only entry today.
-- **`src/characters/` is the only directory allowed to name a script.** A test asserts
-  this by scanning the source tree. It is the check that fails first if hiragana starts
-  leaking into a component, which is exactly the leak that would force a rewrite.
+- **Only two places may name a script:** `src/characters/` (the data layer) and
+  `src/types/characters.ts` (where `ScriptId` lives — a type-level fact with nowhere
+  else to go). Everything else — components, pages, lib, data — must be script-agnostic.
+  `tests/abstraction.test.ts` scans the tree and asserts exactly that.
+
+  It is the check that fails first when the abstraction starts leaking, and **it has
+  already caught a real one**: the Characters page named the script in its placeholder
+  copy. The test lives in `tests/` rather than beside the code because it reads the file
+  system, and `tsconfig.app.json` deliberately withholds Node's types from application
+  code.
+
 - **`layout` is a property of the set, not of the grid.** Kanji has no vowel columns.
   A grid that hardcodes a five-column matrix is the thing that would need rewriting, so
   the grid branches on `set.layout` from day one. **Two branches, and no more.**

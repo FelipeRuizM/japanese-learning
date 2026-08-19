@@ -8,9 +8,14 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-08-19
 
-Phases 0 and 1 are done. The site builds, every asset resolves under the Pages base
-path, and `/styleguide` renders the whole token layer. **Deployed as v1.0.**
-**Phase 2 is next.**
+Phases 0, 1 and 2 are done. **Deployed as v1.2.**
+
+Between phases 1 and 2 the owner asked for **dark mode only**, reversing the light
+"paper and ink" direction v1.0 shipped with. The palette was re-derived and re-measured
+against the new ground rather than flipped by eye; `CLAUDE.md` §7 records both the
+reversal and the colourblind sweep behind it. Shipped as **v1.1**.
+
+**Phase 3 is next.**
 
 Four decisions were taken with the owner before any code, and are folded into
 `CLAUDE.md`:
@@ -69,25 +74,38 @@ loaded on demand by unicode-range.
 **Not done, deliberately:** the routes for Characters, Flashcards and Quiz are honest
 placeholders naming the phase that fills them. They do not pretend to work.
 
-## Phase 2 — Character model, hiragana data, and the registry · _the hinge phase_
+## Phase 2 — Character model, hiragana data, and the registry ✅ · _the hinge phase_
 
 The abstraction is decided here. Everything after it consumes a `CharacterSet` and
 nothing else.
 
-- [ ] `src/types/characters.ts` per `CLAUDE.md` §3.1
-- [ ] `src/characters/hiragana.ts` — the 46 gojūon in eleven rows, gaps as `null`,
-      Hepburn romaji, `を` romanised `o`
-- [ ] **One to two example words per character**, kana-only, each containing its own
-      character; the `を` phrase and the `ん` word per §3.4
-- [ ] `src/characters/registry.ts` — `CHARACTER_SETS`, `characterSetById`,
-      `allCharacters(set)`
-- [ ] Tests: 46 present · ids, glyphs and romaji unique · every character has ≥1 example
-      · every example contains its character · every example is kana-only · row shapes
-      match `columns.length`
-- [ ] **The leak test** — scan `src/` and assert no module outside `src/characters/`
-      contains a script name. This is the test that fails first when the abstraction
-      starts leaking
-- [ ] `feat: character set model and hiragana data`
+- [x] `src/types/characters.ts` per `CLAUDE.md` §3.1
+- [x] `src/characters/hiragana.ts` — the 46 gojūon in eleven rows, gaps as `null`,
+      Hepburn romaji, `を` romanised `o` with id `hiragana:wo`
+- [x] **51 example words**, kana-only, each containing its own character; the `を`
+      phrase and the `ん` word per §3.4
+- [x] `src/characters/registry.ts` — `CHARACTER_SETS`, `characterSetById`,
+      `allCharacters`, `everyCharacter`, `characterById`
+- [x] Tests: 46 present · ids and glyphs unique · **exactly one romaji collision, pinned
+      to お/を** · ん is the only character with no vowel · every other character sits in
+      the column its vowel names · gaps preserved (2 in the や-row, 3 in the わ-row) ·
+      every character has ≥1 example · every example contains its character · every
+      example is hiragana-only
+- [x] **The leak test** — `tests/abstraction.test.ts`. It caught a real leak on its first
+      run: the Characters page named the script in its placeholder copy
+- [x] `feat: character set model and hiragana data`
+
+**Deployed as 1.2.** 25 tests across 5 files.
+
+**Two things the implementation forced:**
+
+- **The allowlist is two paths, not one.** `ScriptId` is a type-level fact and has to
+  live in `src/types/characters.ts`; the original "only `src/characters/` may name a
+  script" was unimplementable as written. `CLAUDE.md` §3.2 now states both.
+- **The leak test moved to `tests/`.** It reads the file system, and
+  `tsconfig.app.json` withholds Node's types from application code on purpose. Putting
+  it beside the code would have meant letting `process` and `node:fs` into the app's
+  type environment to satisfy one test.
 
 ## Phase 3 — Selection grid and deck state
 
