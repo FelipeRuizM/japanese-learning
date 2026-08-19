@@ -6,4 +6,4 @@
  * report. `package.json` stays at 0.0.0: this app is never published to a
  * registry, and a second number is a second thing to forget.
  */
-export const APP_VERSION = '1.0'
+export const APP_VERSION = '1.1'

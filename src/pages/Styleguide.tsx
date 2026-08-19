@@ -9,23 +9,23 @@ import { Button, Chip, Glyph, Label, Rule } from '../components/ui/primitives'
 
 /** The measured contrast figures from tokens.css, shown beside the swatch. */
 const INK = [
-  { token: 'ink-0', contrast: '16.70:1', use: 'glyphs, headlines' },
-  { token: 'ink-1', contrast: '11.50:1', use: 'prose' },
-  { token: 'ink-2', contrast: '5.60:1', use: 'labels, metadata' },
-  { token: 'ink-3', contrast: '2.89:1', use: 'gaps, disabled — NOT text' },
+  { token: 'ink-0', contrast: '16.71:1', use: 'glyphs, headlines' },
+  { token: 'ink-1', contrast: '11.23:1', use: 'prose' },
+  { token: 'ink-2', contrast: '5.69:1', use: 'labels, metadata' },
+  { token: 'ink-3', contrast: '2.53:1', use: 'gaps, disabled — NOT text' },
 ] as const
 
 const SURFACES = [
   { token: 'ground', note: 'the page' },
   { token: 'sunken', note: 'row bands, card backs' },
-  { token: 'rule', note: 'hairlines — 1.36:1, NOT text' },
+  { token: 'rule', note: 'hairlines — 1.27:1, NOT text' },
 ] as const
 
 const MEANING = [
-  { token: 'accent', contrast: '7.97:1', use: 'selection, interaction' },
+  { token: 'accent', contrast: '7.93:1', use: 'selection, interaction' },
   { token: 'accent-soft', contrast: '—', use: 'hover wash — NEVER text' },
-  { token: 'positive', contrast: '11.19:1', use: 'quiz: correct' },
-  { token: 'negative', contrast: '4.58:1', use: 'quiz: wrong — never filled' },
+  { token: 'positive', contrast: '12.90:1', use: 'quiz: correct' },
+  { token: 'negative', contrast: '5.80:1', use: 'quiz: wrong — never filled' },
 ] as const
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -66,7 +66,8 @@ export function Styleguide() {
           Every token and component, in isolation
         </h2>
         <p className="m-0 max-w-prose text-ink-1">
-          Contrast figures are measured against the paper ground, not chosen by eye.
+          Contrast figures are measured against the near-black ground, not chosen by
+          eye.
         </p>
       </header>
 
@@ -93,10 +94,10 @@ export function Styleguide() {
           ))}
         </div>
         <p className="m-0 max-w-prose text-sm text-ink-2">
-          The positive/negative pair is separated by lightness, not hue: the first draft
-          collapsed to ΔE 9.1 under protanopia. This pair measures ΔE 19.7 protan and
-          46.7 deutan. Even so, feedback never relies on colour alone — it always
-          carries a word and a mark.
+          The positive/negative pair is separated by lightness, not hue. The obvious
+          dark pair collapses to ΔE 1.9 under protanopia; this one measures ΔE 38.0
+          protan and 43.6 deutan. Even so, feedback never relies on colour alone — it
+          always carries a word and a mark.
         </p>
         <div className="flex flex-col gap-2">
           <p className="m-0 flex items-center gap-2 border-l-2 border-positive pl-3 text-positive">

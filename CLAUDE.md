@@ -3,9 +3,9 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-19.** Phase 1 shipped as **v1.0** — scaffold, token layer,
-> styleguide and the Pages pipeline. The site is live and empty; no character data
-> exists yet. Phase 2 is next.
+> **Status — 2026-08-19.** Phase 1 shipped as **v1.0**. The design system was then
+> **reversed to dark only** at the owner's request (v1.1) — see §7. Phase 2 ships the
+> character model and the hiragana data.
 
 ---
 
@@ -312,20 +312,27 @@ unit-tested. The UI renders what it returns and holds no question logic.
 
 ## 7. Design system
 
-**Direction: paper and ink.** A warm off-white ground with near-black glyphs, one
-indigo accent. The reasoning is legibility of large kana: stroke shape is what is being
-learned, and dark-on-light at large sizes is the arrangement that shows it most clearly.
+**Direction: chalk on slate.** A warm near-black ground with bright kana and one
+lightened-indigo accent. The glyph is the brightest thing on screen, because stroke
+shape is what is being learned.
+
+> **This reverses the original light "paper and ink" direction.** v1.0 shipped light,
+> on the reasoning that dark-on-light at large sizes shows stroke shape most clearly.
+> The owner asked for dark only in v1.1 and that is the decision; the reasoning above is
+> recorded so nobody re-argues it from the old comments in the codebase. **The palette
+> was re-derived and re-measured, not flipped by eye** — see the token layer.
 
 ### The grammar
 
-- **Ground is warm paper**, not white and not grey-blue. Content sits directly on it.
-- **One accent — indigo — carries interaction and selection.** Everything else is the
-  ground plus four steps of neutral ink.
-- **The glyph is the largest thing on screen, always.** Chrome recedes.
+- **Ground is warm near-black**, not `#000` and not a blue-grey slate. Content sits
+  directly on it.
+- **One accent — a lightened indigo — carries interaction and selection.** Everything
+  else is the ground plus four steps of neutral ink.
+- **The glyph is the largest and brightest thing on screen, always.** Chrome recedes.
 - **No container chrome.** No shadows, no borders as decoration, radius no larger than
   4px. Separation comes from whitespace and hairline rules.
 - Labels and metadata are **small, letter-spaced and dim**; glyphs and answers are
-  large and dark. The hierarchy inverts the usual.
+  large and bright. The hierarchy inverts the usual.
 
 ### Hard bans — these read as generated-by-default
 
@@ -336,7 +343,7 @@ learned, and dark-on-light at large sizes is the arrangement that shows it most 
 - **emoji used as iconography or in UI copy** — icons are inline SVG
 - untouched shadcn/ui, or the Tailwind default palette out of the box
   (`bg-slate-800`, `text-gray-400`, …)
-- **Dark mode.** Light only. Do not build one.
+- **Light mode. Dark only. Do not build one.**
 
 ### Token layer — `src/styles/tokens.css`
 
@@ -346,24 +353,24 @@ are generated from the token layer by construction.
 
 ```css
 :root {
-  /* ground — warm paper. the only backgrounds that exist. */
-  --color-ground: #faf7f2;
-  --color-sunken: #f1ebe1; /* row bands, card backs */
-  --color-rule: #ded5c8; /* hairlines. NOT FOR TEXT — 1.36:1 */
+  /* ground — warm near-black. the only backgrounds that exist. */
+  --color-ground: #14110e;
+  --color-sunken: #1c1815; /* row bands, card backs */
+  --color-rule: #2b2721; /* hairlines. NOT FOR TEXT — 1.27:1 */
 
-  /* ink ramp */
-  --color-ink-3: #9c9184; /* 2.89:1 — gaps and disabled only, NOT FOR TEXT */
-  --color-ink-2: #6b6257; /* 5.60:1 — labels, metadata */
-  --color-ink-1: #3a342d; /* 11.50:1 — prose */
-  --color-ink-0: #1a1714; /* 16.70:1 — glyphs and headlines */
+  /* ink ramp — the bright end is the "ink" now */
+  --color-ink-3: #5c5449; /* 2.53:1 — gaps and disabled only, NOT FOR TEXT */
+  --color-ink-2: #968c7e; /* 5.69:1 — labels, metadata */
+  --color-ink-1: #cfc7ba; /* 11.23:1 — prose */
+  --color-ink-0: #f5f1ea; /* 16.71:1 — glyphs, headlines */
 
-  /* the one accent — selection and interaction. 7.97:1 on ground. */
-  --color-accent: #2c4a8c;
-  --color-accent-soft: #e4e8f3; /* hover wash, never text */
+  /* the one accent — selection and interaction. 7.93:1 on ground. */
+  --color-accent: #8fa6ee;
+  --color-accent-soft: #242536; /* hover wash, never text */
 
   /* semantic — quiz feedback only. see the note below. */
-  --color-positive: #0e3f25; /* 11.19:1 */
-  --color-negative: #c4472f; /*  4.58:1 */
+  --color-positive: #a8e3bf; /* 12.90:1 */
+  --color-negative: #e8674a; /*  5.80:1 */
 
   --radius-sm: 2px;
   --radius-md: 4px; /* nothing larger exists */
@@ -371,19 +378,22 @@ are generated from the token layer by construction.
 ```
 
 **Every value above is measured, not chosen by eye.** Contrast is against the
-`#faf7f2` ground; the figures are in the comments and every text colour clears WCAG AA.
+`#14110e` ground; the figures are in the comments and every text colour clears WCAG AA.
 
-> **The positive/negative pair is the one that carries meaning, and it was corrected
-> once.** The first draft (`#1b6f45` / `#b23a2b`) sat at **ΔE 9.1 under protanopia** —
-> effectively indistinguishable for a protanope. Sweeping for **lightness** separation
-> instead of hue separation produced the current pair at **ΔE 19.7 protan, 46.7 deutan,
-> with a 24.6 L\* gap.** Do not "fix" the green by brightening it: the lightness gap is
-> what does the work when the hue axis collapses.
+> **The positive/negative pair is the one that carries meaning, and the same trap has
+> now been hit twice.** On the light ground the first draft measured **ΔE 9.1 under
+> protanopia**; on this dark ground the obvious pair (`#3fa86c` / `#ff8a6b`) measures
+> **ΔE 1.9** — effectively identical. Both times the fix was the same: sweep for
+> **lightness** separation rather than hue. The shipped pair measures **ΔE 38.0 protan,
+> 43.6 deutan, 26.2 L\* gap**, and both stay clear of the accent (min ΔE 55.7 deutan).
+>
+> **Do not "fix" the green by saturating it,** and do not lighten the light-mode values
+> to make a dark pair — that is exactly what produced the ΔE 1.9 draft. Re-sweep.
 >
 > **Even so, colour is never the only channel.** Quiz feedback always carries a word
-> ("Correct" / "Not quite") and an inline SVG mark. And because a filled vermilion chip
-> would sit at only 4.58:1, **semantic colour appears as text and a rule on the paper
-> ground — never as a filled background.** Indigo selection may fill; semantics may not.
+> ("Correct" / "Not quite") and an inline SVG mark. **Semantic colour appears as text
+> and a rule on the ground — never as a filled background.** Accent may fill; semantics
+> may not.
 
 ### Typography
 

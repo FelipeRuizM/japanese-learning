@@ -42,7 +42,7 @@ export function AppLayout() {
           <h1 className="m-0 font-sans text-lg font-semibold text-ink-0">
             Japanese practice
           </h1>
-          <span className="font-sans text-label tracking-[0.08em] text-ink-3">
+          <span className="font-sans text-label tracking-[0.08em] text-ink-2">
             v{APP_VERSION}
           </span>
           <nav aria-label="Primary" className="flex gap-5">
