@@ -8,14 +8,19 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-08-19
 
-Phases 0 through 4 are done. **Deployed as v1.4.**
+Phases 0 through 4 are done, and **Phase 6 is done**. **Deployed as v1.5.**
+
+> **Phase 5 (Flashcards) was skipped at the owner's request** and is still outstanding.
+> The quiz does not depend on it, so nothing is blocked — but `#/flashcards` is still
+> the Phase 1 placeholder, which means one of the five features in `CLAUDE.md` §1 is
+> not built.
 
 Between phases 1 and 2 the owner asked for **dark mode only**, reversing the light
 "paper and ink" direction v1.0 shipped with. The palette was re-derived and re-measured
 against the new ground rather than flipped by eye; `CLAUDE.md` §7 records both the
 reversal and the colourblind sweep behind it. Shipped as **v1.1**.
 
-**Phase 5 is next.**
+**Phase 5 (skipped) and Phase 7 remain.**
 
 Four decisions were taken with the owner before any code, and are folded into
 `CLAUDE.md`:
@@ -177,7 +182,7 @@ nothing else.
   effect for a fact already knowable at render time. Fixed by deriving the initial
   state with a lazy initialiser.
 
-## Phase 5 — Flashcards
+## Phase 5 — Flashcards ⏭ SKIPPED — still outstanding
 
 - [ ] Deck shuffled once per visit; next / previous; position indicator
 - [ ] Front is the glyph alone, very large. Click flips
@@ -187,20 +192,42 @@ nothing else.
 - [ ] `prefers-reduced-motion` collapses the flip to an instant swap
 - [ ] `feat: flashcards`
 
-## Phase 6 — Quiz
+## Phase 6 — Quiz ✅
 
-- [ ] `src/lib/quiz.ts` — pure, `rng` injected, no React
-- [ ] Direction 50/50 per question; four options; distractor tiers row → vowel → deck →
-      full set
-- [ ] The answer never duplicated; **お/を never options in the same question**
-- [ ] Tests: both directions occur over a seeded run · tier ordering · no duplicate
-      option · the お/を rule · a **two-character deck still yields four distinct
-      options**
-- [ ] `QuizCard` — immediate feedback carrying a **word and an SVG mark, not colour
-      alone**; example word revealed on answer; audio plays
-- [ ] In-memory round score, discarded on unmount
-- [ ] Designed empty-deck state
-- [ ] `feat: two-direction quiz`
+- [x] `src/lib/quiz.ts` — pure, `rng` injected, no React; the UI holds no question logic
+- [x] `src/lib/shuffle.ts` — Fisher-Yates, not `sort(() => rng() - 0.5)`, which is not a
+      uniform shuffle and biases toward the input order
+- [x] Direction chosen 50/50 **per question**, so a learner cannot settle into one
+- [x] Four options; distractors ranked by confusability — same row, then same vowel,
+      then the rest — drawn from the deck before the full set
+- [x] The answer never duplicated; **お/を never in the same question**, keyed on romaji
+      rather than on that specific pair so a future homophone is handled too
+- [x] Tests: both directions occur · row-then-vowel tier order · deck before full set ·
+      no duplicate displayed value · the お/を rule **including the subtle case** where
+      the answer is a third character and both could be drawn as distractors · a
+      two-character deck still yielding four distinct options · a one-character deck too
+- [x] `QuizCard` — feedback carries a **word and an SVG mark**, and semantic colour is
+      an outline and text, never a fill; both the right answer and a wrong choice are
+      marked, since showing only the choice strands someone who guessed
+- [x] Example word revealed on answering; audio plays on the reveal
+- [x] In-memory round score, discarded on unmount
+- [x] `EmptyDeck` — a designed primary screen, because every refresh lands there
+- [x] `QuizCard` and `EmptyDeck` added to `/styleguide`
+- [x] **Verified in a real browser**: 40 questions walked, always four options, never a
+      duplicate, both directions seen, no console errors — then a full 46-question round
+      confirming **8 questions involved お or を and none held both**
+- [x] `feat: two-direction quiz`
+
+**Deployed as 1.5.** 100 tests across 14 files.
+
+**Two things worth keeping:**
+
+- **"Go again" remounts the round rather than reloading the page.** The deck lives in
+  memory by design, so a reload would throw the selection away and strand the learner on
+  an empty grid. The first draft called `window.location.reload()`.
+- **The round is built with `useState`'s initialiser, not `useMemo`.** React is free to
+  discard a `useMemo` and recompute it, which would reshuffle the questions underneath
+  the learner mid-round.
 
 ## Phase 7 — Quality pass
 

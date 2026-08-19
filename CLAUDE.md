@@ -3,9 +3,13 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-19.** Phase 4 shipped as **v1.4** — pronunciation. (v1.0 scaffold;
-> v1.1 reversed the design system to dark only, see §7; v1.2 the character model and
-> data; v1.3 the grid and deck.) Flashcards are Phase 5, the quiz Phase 6.
+> **Status — 2026-08-19.** Phase 6 shipped as **v1.5** — the quiz. (v1.0 scaffold; v1.1
+> reversed the design system to dark only, see §7; v1.2 the character model and data;
+> v1.3 the grid and deck; v1.4 pronunciation.)
+>
+> **PHASE 5 — FLASHCARDS — IS SKIPPED AND STILL OUTSTANDING.** The owner asked to jump
+> to the quiz, which does not depend on it. `#/flashcards` is still the Phase 1
+> placeholder, so one of the five features in §1 is not built. Nothing else is missing.
 
 ---
 

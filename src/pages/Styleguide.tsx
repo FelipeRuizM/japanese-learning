@@ -1,7 +1,11 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { Character } from '../types/characters'
 import { CharacterGrid } from '../components/CharacterGrid'
 import { PronunciationNote, SpeakButton } from '../components/SpeakButton'
+import { QuizCard } from '../components/QuizCard'
+import { EmptyDeck } from '../components/EmptyDeck'
+import { buildQuestion } from '../lib/quiz'
+import { allCharacters, DEFAULT_CHARACTER_SET } from '../characters/registry'
 import { usePronunciation } from '../lib/usePronunciation'
 import { GridCell, GridGap } from '../components/GridCell'
 import { FLOW_FIXTURE } from '../characters/flowFixture'
@@ -61,6 +65,39 @@ const SAMPLE_N = {
   vowel: null,
   examples: [{ kana: 'みかん', romaji: 'mikan', english: 'mandarin orange' }],
 } as const satisfies Character
+
+/**
+ * A quiz card in both states, built from a FIXED question rather than a random
+ * one so the styleguide does not change shape on every visit.
+ */
+function QuizDemo() {
+  const all = allCharacters(DEFAULT_CHARACTER_SET)
+  const answer = all.find((c) => c.romaji === 'ni') ?? all[0]
+  // A constant rng: deterministic layout, and it still exercises the real
+  // question builder rather than a hand-written fake.
+  const question = answer ? buildQuestion(answer, all, all, () => 0.42) : null
+  const [chosen, setChosen] = useState<Character | null>(null)
+  if (!question) return null
+
+  return (
+    <div className="flex flex-col gap-4">
+      <QuizCard
+        question={question}
+        chosen={chosen}
+        onChoose={setChosen}
+        onNext={() => {
+          setChosen(null)
+        }}
+        isLast={false}
+      />
+      <p className="m-0 max-w-prose text-sm text-ink-2">
+        Answer it to see the feedback state. Right and wrong are separated by lightness,
+        and each carries a word and a mark — colour is never the only channel. Semantic
+        colour is an outline and text, never a fill.
+      </p>
+    </div>
+  )
+}
 
 /** The real control, resolving against whatever voices this device has. */
 function LivePronunciation() {
@@ -178,6 +215,18 @@ export function Styleguide() {
           absent button reads as &ldquo;this app has no audio&rdquo;, which is not what
           happened. The note is rendered once per screen, not beside all forty-six
           characters.
+        </p>
+      </Section>
+
+      <Section title="Quiz card">
+        <QuizDemo />
+      </Section>
+
+      <Section title="Empty deck">
+        <EmptyDeck activity="study" />
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          A primary screen, not an edge case: nothing persists between sessions by
+          design, so every refresh lands here.
         </p>
       </Section>
 
