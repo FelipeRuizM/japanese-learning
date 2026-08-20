@@ -18,7 +18,7 @@ function renderPage() {
 describe('the characters page', () => {
   it('opens with an empty deck', () => {
     renderPage()
-    expect(screen.getByText('0 of 46 selected')).toBeInTheDocument()
+    expect(screen.getByText('0 of 71 selected')).toBeInTheDocument()
   })
 
   /**
@@ -35,7 +35,7 @@ describe('the characters page', () => {
 
     await user.click(screen.getByRole('button', { name: 'か ka' }))
 
-    expect(screen.getByText('1 of 46 selected')).toBeInTheDocument()
+    expect(screen.getByText('1 of 71 selected')).toBeInTheDocument()
     expect(
       screen.getByRole('link', { name: 'Study 1 as flashcards' }),
     ).toBeInTheDocument()
@@ -47,11 +47,11 @@ describe('the characters page', () => {
     renderPage()
 
     await user.click(screen.getByRole('button', { name: 'Select all' }))
-    expect(screen.getByText('46 of 46 selected')).toBeInTheDocument()
+    expect(screen.getByText('71 of 71 selected')).toBeInTheDocument()
 
     // The same control flips to the opposite action once the deck is full.
     await user.click(screen.getByRole('button', { name: 'Clear all' }))
-    expect(screen.getByText('0 of 46 selected')).toBeInTheDocument()
+    expect(screen.getByText('0 of 71 selected')).toBeInTheDocument()
   })
 
   it('keeps the count in step with a row selection', async () => {
@@ -59,10 +59,10 @@ describe('the characters page', () => {
     renderPage()
 
     await user.click(screen.getByRole('button', { name: 'S row, select all' }))
-    expect(screen.getByText('5 of 46 selected')).toBeInTheDocument()
+    expect(screen.getByText('5 of 71 selected')).toBeInTheDocument()
 
     // The や-row has two gaps, so it contributes three, not five.
     await user.click(screen.getByRole('button', { name: 'Y row, select all' }))
-    expect(screen.getByText('8 of 46 selected')).toBeInTheDocument()
+    expect(screen.getByText('8 of 71 selected')).toBeInTheDocument()
   })
 })

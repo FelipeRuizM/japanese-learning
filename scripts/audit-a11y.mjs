@@ -13,7 +13,7 @@
  *     npm install --no-save playwright @axe-core/playwright axe-core lighthouse
  *     node scripts/audit-a11y.mjs
  *
- * Last run 2026-08-19 (v1.8): 0 axe violations across ten route/state
+ * Last run 2026-08-20 (v1.9): 0 axe violations across twelve route/state
  * combinations, no console output of any kind, and Lighthouse mobile at
  * performance 97–98 (it varies a point run to run), accessibility 100, best
  * practices 100, SEO 100.
@@ -83,6 +83,7 @@ await scan('grid (empty deck)', open('#/'))
 await scan('flashcards (empty deck)', open('#/flashcards'))
 await scan('quiz (empty deck)', open('#/quiz'))
 await scan('pronunciation chart', open('#/pronunciation'))
+await scan('writing (no prompt yet)', open('#/writing'))
 await scan('styleguide', open('#/styleguide'))
 await scan('404', open('#/no-such-page'))
 await scan('grid (row selected)', withDeck)
@@ -97,6 +98,13 @@ await scan('flashcards (flipped)', async (page) => {
 await scan('pronunciation (tapped)', async (page) => {
   await open('#/pronunciation')(page)
   await page.getByRole('button', { name: 'か ka, play' }).click()
+  await page.waitForTimeout(400)
+})
+
+await scan('writing (revealed)', async (page) => {
+  await open('#/writing')(page)
+  await page.getByRole('button', { name: 'Play a random sound' }).click()
+  await page.getByRole('button', { name: 'Show the character' }).click()
   await page.waitForTimeout(400)
 })
 

@@ -25,7 +25,7 @@ function cells() {
 describe('CharacterGrid — matrix layout', () => {
   it('renders one toggle per character and no button for a gap', () => {
     renderGrid(DEFAULT_CHARACTER_SET)
-    expect(cells()).toHaveLength(46)
+    expect(cells()).toHaveLength(71)
   })
 
   it('starts with nothing selected', () => {

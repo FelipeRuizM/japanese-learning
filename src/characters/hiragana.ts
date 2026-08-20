@@ -7,10 +7,12 @@ import type {
 } from '../types/characters'
 
 /**
- * The 46 gojūon (CLAUDE.md §3.3).
+ * The 46 gojūon, plus the 20 dakuten and 5 handakuten rows — 71 characters.
  *
- * Dakuten/handakuten (が, ぱ) and yōon (きゃ) are deliberately out of scope for
- * now. They are additional rows and need NO type change when they arrive.
+ * The voiced rows were added after v1.8 on request. CLAUDE.md §3.3 predicted
+ * they would be "additional rows needing no type change", and that held: this
+ * file is the only one that changed to bring them in. Yōon (きゃ) remains out
+ * of scope and would arrive the same way.
  *
  * Example words are kana-only, short, common and concrete — context for a
  * sound, not vocabulary study. Every one contains its own character, which is
@@ -226,7 +228,8 @@ const ROWS: CharacterRow[] = [
   ]),
 
   /**
-   * ん gets its own row and is built by hand rather than through `row()`,
+   * ん closes the basic gojūon. It gets its own row and is built by hand rather
+   * than through `row()`,
    * because it is the one character with NO vowel. It sits in the first column
    * only because a gojūon chart has nowhere else to put it — that is a layout
    * position, not a claim that it belongs to the 'a' column.
@@ -254,6 +257,148 @@ const ROWS: CharacterRow[] = [
       null,
     ],
   },
+
+  /* ── 濁音 dakuten — the two small strokes ──────────────────────────────
+     Voiced counterparts of the k, s, t and h rows. They are written with the
+     same base glyph plus ゛, and they are precomposed single code points, so
+     nothing here needs to compose marks at render time. */
+
+  row('g', 'G-row', [
+    {
+      key: 'ga',
+      glyph: 'が',
+      romaji: 'ga',
+      examples: [w('かがみ', 'kagami', 'mirror')],
+    },
+    { key: 'gi', glyph: 'ぎ', romaji: 'gi', examples: [w('かぎ', 'kagi', 'key')] },
+    {
+      key: 'gu',
+      glyph: 'ぐ',
+      romaji: 'gu',
+      examples: [w('かぐ', 'kagu', 'furniture')],
+    },
+    {
+      key: 'ge',
+      glyph: 'げ',
+      romaji: 'ge',
+      examples: [w('げんき', 'genki', 'well, energetic')],
+    },
+    {
+      key: 'go',
+      glyph: 'ご',
+      romaji: 'go',
+      examples: [w('ごはん', 'gohan', 'cooked rice, a meal')],
+    },
+  ]),
+
+  row('z', 'Z-row', [
+    {
+      key: 'za',
+      glyph: 'ざ',
+      romaji: 'za',
+      examples: [w('ざっし', 'zasshi', 'magazine')],
+    },
+    { key: 'ji', glyph: 'じ', romaji: 'ji', examples: [w('じかん', 'jikan', 'time')] },
+    { key: 'zu', glyph: 'ず', romaji: 'zu', examples: [w('みず', 'mizu', 'water')] },
+    { key: 'ze', glyph: 'ぜ', romaji: 'ze', examples: [w('かぜ', 'kaze', 'wind')] },
+    { key: 'zo', glyph: 'ぞ', romaji: 'zo', examples: [w('ぞう', 'zou', 'elephant')] },
+  ]),
+
+  /*
+    The D-row carries the two rarest characters in the language, and both are
+    homophones of Z-row characters: ぢ is pronounced "ji" like じ, and づ is
+    "zu" like ず. Modern Japanese uses the Z-row spellings almost everywhere,
+    so these two survive mainly in compounds — which is exactly what their
+    example words show.
+
+    Their ids are the WRITTEN forms, `di` and `du`, because ids must stay
+    unique while romaji does not (§3.3). The quiz already excludes same-romaji
+    characters from appearing together, keyed on romaji rather than on the
+    お/を pair specifically, so it handles these two without any change.
+  */
+  row('d', 'D-row', [
+    { key: 'da', glyph: 'だ', romaji: 'da', examples: [w('からだ', 'karada', 'body')] },
+    {
+      key: 'di',
+      glyph: 'ぢ',
+      romaji: 'ji',
+      examples: [w('はなぢ', 'hanaji', 'a nosebleed')],
+    },
+    {
+      key: 'du',
+      glyph: 'づ',
+      romaji: 'zu',
+      examples: [w('つづく', 'tsuzuku', 'to be continued')],
+    },
+    {
+      key: 'de',
+      glyph: 'で',
+      romaji: 'de',
+      examples: [w('でんわ', 'denwa', 'telephone')],
+    },
+    {
+      key: 'do',
+      glyph: 'ど',
+      romaji: 'do',
+      examples: [w('どうぶつ', 'doubutsu', 'animal')],
+    },
+  ]),
+
+  row('b', 'B-row', [
+    {
+      key: 'ba',
+      glyph: 'ば',
+      romaji: 'ba',
+      examples: [w('そば', 'soba', 'buckwheat noodles')],
+    },
+    { key: 'bi', glyph: 'び', romaji: 'bi', examples: [w('へび', 'hebi', 'snake')] },
+    { key: 'bu', glyph: 'ぶ', romaji: 'bu', examples: [w('ぶた', 'buta', 'pig')] },
+    {
+      key: 'be',
+      glyph: 'べ',
+      romaji: 'be',
+      examples: [w('べんとう', 'bentou', 'a packed lunch')],
+    },
+    { key: 'bo', glyph: 'ぼ', romaji: 'bo', examples: [w('ぼうし', 'boushi', 'hat')] },
+  ]),
+
+  /* ── 半濁音 handakuten — the small circle ──────────────────────────────
+     Only the h-row takes it. Not the two strokes, but taught alongside them
+     and derived from the same base row, so a chart carrying ば without ぱ
+     reads as unfinished. */
+
+  row('p', 'P-row', [
+    {
+      key: 'pa',
+      glyph: 'ぱ',
+      romaji: 'pa',
+      examples: [w('いっぱい', 'ippai', 'full, a lot')],
+    },
+    {
+      key: 'pi',
+      glyph: 'ぴ',
+      romaji: 'pi',
+      examples: [w('ぴかぴか', 'pikapika', 'sparkling')],
+    },
+    {
+      key: 'pu',
+      glyph: 'ぷ',
+      romaji: 'pu',
+      examples: [w('てんぷら', 'tenpura', 'tempura')],
+    },
+    {
+      key: 'pe',
+      glyph: 'ぺ',
+      romaji: 'pe',
+      examples: [w('ぺこぺこ', 'pekopeko', 'hungry')],
+    },
+    {
+      key: 'po',
+      glyph: 'ぽ',
+      romaji: 'po',
+      examples: [w('さんぽ', 'sanpo', 'a walk')],
+    },
+  ]),
 ]
 
 export const HIRAGANA: CharacterSet = {

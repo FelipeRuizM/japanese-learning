@@ -28,9 +28,9 @@ describe('the registry', () => {
     if (!set) return
 
     const cells = set.rows.flatMap((row) => row.cells)
-    expect(cells.length).toBe(55) // 11 rows × 5 columns, gaps included
-    expect(allCharacters(set)).toHaveLength(46)
-    expect(everyCharacter()).toHaveLength(46)
+    expect(cells.length).toBe(80) // 16 rows × 5 columns, gaps included
+    expect(allCharacters(set)).toHaveLength(71)
+    expect(everyCharacter()).toHaveLength(71)
   })
 
   it('resolves an id back to its character', () => {

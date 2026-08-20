@@ -12,6 +12,7 @@ const ROUTES = [
   { to: '/flashcards', label: 'Flashcards', end: false },
   { to: '/quiz', label: 'Quiz', end: false },
   { to: '/pronunciation', label: 'Sounds', end: false },
+  { to: '/writing', label: 'Writing', end: false },
 ] as const
 
 function NavItem({ to, label, end }: { to: string; label: string; end: boolean }) {
@@ -46,7 +47,14 @@ export function AppLayout() {
           <span className="font-sans text-label tracking-[0.08em] text-ink-2">
             v{APP_VERSION}
           </span>
-          <nav aria-label="Primary" className="flex gap-5">
+          {/*
+            Wraps. With five routes the row measures 415px, which is wider than
+            a 375px phone, and a non-wrapping nav pushed every page into
+            horizontal scroll — not just the newest one. Wrapping keeps every
+            destination visible; a scrolling nav would hide the last tabs behind
+            a gesture nobody is told about.
+          */}
+          <nav aria-label="Primary" className="flex flex-wrap gap-x-5 gap-y-1">
             {ROUTES.map((route) => (
               <NavItem key={route.to} {...route} />
             ))}

@@ -50,7 +50,7 @@ describe('the pronunciation chart', () => {
     renderSounds()
     // No selection needed: this is a reference, so every character is present
     // without anything having been chosen first.
-    expect(screen.getAllByRole('button', { name: /, play$/ })).toHaveLength(46)
+    expect(screen.getAllByRole('button', { name: /, play$/ })).toHaveLength(71)
   })
 
   it('speaks the glyph when a character is tapped', async () => {

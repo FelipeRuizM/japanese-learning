@@ -3,9 +3,10 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-19. Complete at v1.8.** All seven phases are done, all five
-> features in §1 are built, and a sixth — the pronunciation chart — was added
-> afterwards at the owner's request. (v1.0 scaffold; v1.1 reversed the design system to
+> **Status — 2026-08-20. Complete at v1.9.** All seven phases are done and all five
+> features in §1 are built, plus two added afterwards on request — the pronunciation
+> chart and writing practice — and the **dakuten/handakuten rows**, taking the set from
+> 46 characters to 71. (v1.0 scaffold; v1.1 reversed the design system to
 > dark only, see §7; v1.2 the character model and data; v1.3 the grid and deck; v1.4
 > pronunciation; v1.5 the quiz; v1.6 flashcards; v1.7 the quality pass.)
 >
@@ -45,6 +46,16 @@ Five features, and no more:
 5. **Quiz** — recall over the selected deck, mixing both directions at random.
 6. **Pronunciation chart** — the whole set as a reference; tap any character to hear
    it. Added after the original five, on request.
+7. **Writing practice** — hear a random character and read its romaji, write the kana
+   **on paper**, then reveal it to check. Added on request.
+
+   > **The app does not capture the answer, deliberately.** Recognising a shape and
+   > producing one are different skills, and producing it is the one a keyboard cannot
+   > exercise. The screen owes the learner exactly one thing: an honest reveal.
+   >
+   > **The glyph must not be in the DOM before that reveal** — not merely hidden with
+   > CSS, which would leave it for a screen reader to announce. Rendering it early turns
+   > writing practice into copying.
 
    > **It reads the whole set, not the deck.** It is a reference you dip into, not a
    > drill: gating it behind a selection would make the obvious question — _what does
@@ -164,8 +175,12 @@ export type CharacterSet = {
 
 ### 3.3 Hiragana scope and layout
 
-**The 46 gojūon only.** Dakuten/handakuten (が, ぱ) and yōon (きゃ) are deliberately
-deferred; they are additional rows and need **no type change** when they arrive.
+**71 characters: the 46 gojūon, the 20 dakuten rows (が, ざ, だ, ば) and the 5
+handakuten (ぱ).** Yōon (きゃ) remains out of scope.
+
+> **The voiced rows were added after v1.8, and §3.3's prediction held exactly.** They
+> needed no type change and no component change — `src/characters/hiragana.ts` was the
+> only source file touched. Yōon would arrive the same way.
 
 ```
 row      a    i    u    e    o
@@ -287,6 +302,7 @@ breathe on desktop.
 #/flashcards     Flashcards  — flip through the deck
 #/quiz           Quiz        — recall over the deck
 #/pronunciation  Sounds      — the whole set; tap a character to hear it
+#/writing        Writing     — hear one at random, write it on paper, then check
 #/styleguide     Styleguide  — every token and component in isolation
 ```
 

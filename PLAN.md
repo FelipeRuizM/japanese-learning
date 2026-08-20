@@ -8,9 +8,9 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-08-19
 
-**Complete at v1.8.** All seven phases are done and all five original features are
-built, plus a sixth added on request: the **pronunciation chart** (`#/pronunciation`) —
-the whole set as a reference, tap a character to hear it.
+**Complete at v1.9.** All seven phases are done and all five original features are
+built, plus two added on request — the **pronunciation chart** and **writing practice** —
+and the **dakuten/handakuten rows**, taking the set from 46 characters to 71.
 
 Phase 5 was skipped at the owner's request and built after Phase 6, out of order — the
 quiz did not depend on it.
@@ -50,6 +50,46 @@ Owner-requested, not from the original plan.
 - [x] `feat: a pronunciation chart`
 
 **Deployed as 1.8.** 123 tests across 18 files.
+
+## Post-1.8 — dakuten, handakuten, and writing practice ✅
+
+Owner-requested.
+
+**The voiced rows (v1.9).** が ざ だ ば and ぱ — 25 characters, taking the set to 71.
+
+- [x] `CLAUDE.md` §3.3 predicted these would be "additional rows needing no type
+      change". **That held exactly**: `src/characters/hiragana.ts` was the only source
+      file touched. No component, no type, no layout change
+- [x] 25 example words, kana-only, each containing its character
+- [x] **Two new homophone pairs**: じ/ぢ are both `ji`, ず/づ are both `zu`. Ids stay
+      unique because they come from the written form — `di`, `du`
+- [x] **Exactly one test failed** when the data landed: the one asserting a single
+      romaji collision. The quiz's exclusion is keyed on romaji rather than on the
+      お/を pair, so it absorbed both new pairs with no change — the generality written
+      in Phase 6 paying off
+- [x] The test now pins all three pairs, so a fourth cannot appear unnoticed
+
+**Writing practice (v1.9)** — `#/writing`.
+
+- [x] Play a random character, show its romaji, write it on paper, reveal to check
+- [x] **The glyph is not in the DOM before the reveal** — not CSS-hidden, which would
+      leave it for a screen reader. Rendering it early turns the exercise into copying
+- [x] No answer capture, deliberately: producing a shape is the skill a keyboard cannot
+      exercise
+- [x] Never draws the same character twice running
+- [x] Uses the deck when there is one and the whole set otherwise, and **says which** —
+      requiring a selection before the first sound would be friction for no gain
+- [x] Tests: the glyph stays hidden until revealed · the reveal matches what was spoken
+      · the answer re-hides on the next sound · no back-to-back repeats · the pool
+      follows the deck · replay does not advance
+- [x] **A regression the browser caught that no test would have**: a fifth nav tab made
+      the header 415px wide, overflowing **every** page at 375px. The nav wraps now, and
+      overflow is 0 on all five routes down to a 320px viewport
+- [x] Re-audited: **0 axe violations across twelve route/state combinations**,
+      Lighthouse mobile 97 / 100 / 100 / 100
+- [x] `feat: dakuten and handakuten rows, and writing practice`
+
+**Deployed as 1.9.** 133 tests across 19 files.
 
 Four decisions were taken with the owner before any code, and are folded into
 `CLAUDE.md`:
