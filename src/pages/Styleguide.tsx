@@ -9,6 +9,7 @@ import { buildQuestion } from '../lib/quiz'
 import { allCharacters, DEFAULT_CHARACTER_SET } from '../characters/registry'
 import { usePronunciation } from '../lib/usePronunciation'
 import { GridCell, GridGap } from '../components/GridCell'
+import { SoundCell } from '../components/SoundCell'
 import { FLOW_FIXTURE } from '../characters/flowFixture'
 import {
   Button,
@@ -275,6 +276,18 @@ export function Styleguide() {
           Unselected, selected, a gap, and ん. The gap is empty space rather than a
           disabled button — there is no character there to disable, and collapsing it
           would change the shape of the chart.
+        </p>
+      </Section>
+
+      <Section title="Sound cell">
+        <div className="grid max-w-xs grid-cols-4 gap-1.5">
+          <SoundCell character={SAMPLE} active={false} onPlay={() => undefined} />
+          <SoundCell character={SAMPLE} active onPlay={() => undefined} />
+        </div>
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          At rest and last-played. It is an action, not a toggle, so it carries no
+          <code> aria-pressed</code> — and it is never disabled, because a tap still
+          reveals the reading on a device with no Japanese voice.
         </p>
       </Section>
 

@@ -13,7 +13,7 @@
  *     npm install --no-save playwright @axe-core/playwright axe-core lighthouse
  *     node scripts/audit-a11y.mjs
  *
- * Last run 2026-08-19 (v1.7): 0 axe violations across eight route/state
+ * Last run 2026-08-19 (v1.8): 0 axe violations across ten route/state
  * combinations, no console output of any kind, and Lighthouse mobile at
  * performance 97–98 (it varies a point run to run), accessibility 100, best
  * practices 100, SEO 100.
@@ -82,6 +82,7 @@ console.log('— axe —')
 await scan('grid (empty deck)', open('#/'))
 await scan('flashcards (empty deck)', open('#/flashcards'))
 await scan('quiz (empty deck)', open('#/quiz'))
+await scan('pronunciation chart', open('#/pronunciation'))
 await scan('styleguide', open('#/styleguide'))
 await scan('404', open('#/no-such-page'))
 await scan('grid (row selected)', withDeck)
@@ -91,6 +92,12 @@ await scan('flashcards (flipped)', async (page) => {
   await page.getByRole('link', { name: /as flashcards/ }).click()
   await page.locator('button[aria-expanded]').click()
   await page.waitForTimeout(500)
+})
+
+await scan('pronunciation (tapped)', async (page) => {
+  await open('#/pronunciation')(page)
+  await page.getByRole('button', { name: 'か ka, play' }).click()
+  await page.waitForTimeout(400)
 })
 
 await scan('quiz (answered)', async (page) => {

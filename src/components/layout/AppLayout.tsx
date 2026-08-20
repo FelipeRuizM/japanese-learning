@@ -11,6 +11,7 @@ const ROUTES = [
   { to: '/', label: 'Characters', end: true },
   { to: '/flashcards', label: 'Flashcards', end: false },
   { to: '/quiz', label: 'Quiz', end: false },
+  { to: '/pronunciation', label: 'Sounds', end: false },
 ] as const
 
 function NavItem({ to, label, end }: { to: string; label: string; end: boolean }) {

@@ -8,8 +8,9 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-08-19
 
-**The build is complete at v1.7.** All seven phases are done and all five features in
-`CLAUDE.md` §1 are built.
+**Complete at v1.8.** All seven phases are done and all five original features are
+built, plus a sixth added on request: the **pronunciation chart** (`#/pronunciation`) —
+the whole set as a reference, tap a character to hear it.
 
 Phase 5 was skipped at the owner's request and built after Phase 6, out of order — the
 quiz did not depend on it.
@@ -25,6 +26,30 @@ against the new ground rather than flipped by eye; `CLAUDE.md` §7 records both 
 reversal and the colourblind sweep behind it. Shipped as **v1.1**.
 
 **Katakana is the natural next addition: a data module plus one registry entry.**
+
+## Post-1.7 — the pronunciation chart ✅
+
+Owner-requested, not from the original plan.
+
+- [x] `#/pronunciation` and a **Sounds** nav entry
+- [x] `GridLayout` extracted — the chart shape, with render props for the cell and the
+      row label. Both grids share it, so the matrix/flow branches cannot drift apart
+- [x] `SoundCell` — an action, **not** a toggle, so no `aria-pressed`
+- [x] Reads the **whole set**, not the deck: a reference, not a drill
+- [x] **Never disabled, and a tap always answers.** On a device with no Japanese voice
+      the screen's entire purpose would otherwise be silence, so the tapped character is
+      echoed below the chart with its reading and an example word, under `aria-live`
+- [x] Added to `/styleguide`; the audit script covers the new route and its tapped state
+- [x] Tests: whole set present · speaks the glyph and not the romaji · echoes the
+      reading and example · **still answers with no Japanese voice** · marks the last
+      tap · carries no `aria-pressed`
+- [x] **Verified in a browser** with a Japanese voice injected: tapping か then ね speaks
+      "か","ね", each preceded by a cancel so no backlog builds, no overflow, no errors
+- [x] Re-audited: **0 axe violations across ten route/state combinations**, Lighthouse
+      mobile 98 / 100 / 100 / 100
+- [x] `feat: a pronunciation chart`
+
+**Deployed as 1.8.** 123 tests across 18 files.
 
 Four decisions were taken with the owner before any code, and are folded into
 `CLAUDE.md`:

@@ -1,147 +1,63 @@
 import type { CharacterRow, CharacterSet } from '../types/characters'
 import { useDeck } from '../data/useDeck'
 import { hasAll } from '../data/deck'
-import { GridCell, GridGap } from './GridCell'
+import { GridCell } from './GridCell'
+import { GridLayout } from './GridLayout'
 
 /**
- * The character grid.
+ * The deck selector.
  *
  * It takes a `CharacterSet` and knows nothing about which script it is showing
- * — that is the whole point of the abstraction, and `tests/abstraction.test.ts`
- * enforces it.
- *
- * It branches on `set.layout`, a property of the SET rather than of this
- * component. A grid that hardcoded a five-column matrix is exactly what would
- * need rewriting when kanji arrives, so both branches exist now and both are
- * exercised — the `flow` branch by a fixture on /styleguide, so it is not
- * theoretical (CLAUDE.md §3.2).
+ * — that is the point of the abstraction, and `tests/abstraction.test.ts`
+ * enforces it. The chart SHAPE lives in `GridLayout`, shared with the
+ * pronunciation chart so the two cannot drift.
  */
 export function CharacterGrid({ set }: { set: CharacterSet }) {
-  return set.layout === 'matrix' ? <MatrixGrid set={set} /> : <FlowGrid set={set} />
-}
-
-function idsIn(row: CharacterRow): string[] {
-  return row.cells.filter((cell) => cell !== null).map((cell) => cell.id)
-}
-
-/**
- * "K-row" reads as a heading in the chart but only "K" fits the label column.
- * The accessible name is built from this same string so the two never diverge.
- */
-function shortLabel(label: string): string {
-  return label.replace('-row', '')
-}
-
-/** Column template: one narrow label column, then one per vowel. */
-function columnStyle(columns: number) {
-  return { gridTemplateColumns: `3.25rem repeat(${columns}, minmax(0, 1fr))` }
-}
-
-function MatrixGrid({ set }: { set: CharacterSet }) {
   const deck = useDeck()
 
-  return (
-    <div className="flex flex-col gap-2">
-      {/* Column headers. Presentational — the vowel is already part of every
-          cell's accessible name through its romaji, so repeating it here would
-          just make each button announce twice. */}
-      <div
-        className="grid gap-1.5"
-        style={columnStyle(set.columns.length)}
-        aria-hidden="true"
-      >
-        <span />
-        {set.columns.map((vowel) => (
-          <span
-            key={vowel}
-            className="text-center font-sans text-label tracking-[0.08em] text-ink-2 uppercase"
-          >
-            {vowel}
-          </span>
-        ))}
-      </div>
+  const idsIn = (row: CharacterRow): string[] =>
+    row.cells.filter((cell) => cell !== null).map((cell) => cell.id)
 
-      {set.rows.map((row) => {
-        const ids = idsIn(row)
-        const full = hasAll(deck.selected, ids)
-
-        return (
-          <div
-            key={row.id}
-            className="grid gap-1.5"
-            style={columnStyle(set.columns.length)}
-          >
-            <button
-              type="button"
-              onClick={() => (full ? deck.deselect(ids) : deck.select(ids))}
-              // Opens with the VISIBLE text, so the accessible name and what a
-              // voice-control user can read agree (Phase 7 audit).
-              aria-label={`${shortLabel(row.label)} row, ${full ? 'clear all' : 'select all'}`}
-              className="flex cursor-pointer items-center justify-center rounded-sm px-0.5 text-center font-sans text-label leading-tight tracking-[0.08em] text-ink-2 uppercase transition-colors hover:bg-accent-soft hover:text-ink-0"
-            >
-              {/* The row label is the control. "K-row" reads as a heading but
-                  behaves as select/clear, which the aria-label makes explicit. */}
-              {shortLabel(row.label)}
-            </button>
-
-            {row.cells.map((cell, index) =>
-              cell === null ? (
-                <GridGap key={`${row.id}-gap-${String(index)}`} />
-              ) : (
-                <GridCell
-                  key={cell.id}
-                  character={cell}
-                  selected={deck.has(cell.id)}
-                  onToggle={deck.toggle}
-                />
-              ),
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/**
- * The no-matrix layout. Kanji has no vowel columns, so its characters simply
- * flow; rows become named groups rather than a grid of vowels.
- */
-function FlowGrid({ set }: { set: CharacterSet }) {
-  const deck = useDeck()
+  /**
+   * "K-row" reads as a heading in the chart but only "K" fits the label column.
+   * The accessible name is built from this same string so the two never
+   * diverge — the Phase 7 audit caught them doing exactly that.
+   */
+  const shortLabel = (label: string): string => label.replace('-row', '')
 
   return (
-    <div className="flex flex-col gap-6">
-      {set.rows.map((row) => {
+    <GridLayout
+      set={set}
+      renderRowLabel={(row) => {
         const ids = idsIn(row)
         const full = hasAll(deck.selected, ids)
+        const matrix = set.layout === 'matrix'
+        const label = matrix ? shortLabel(row.label) : row.label
 
         return (
-          <section key={row.id} className="flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => (full ? deck.deselect(ids) : deck.select(ids))}
-              aria-label={`${row.label}, ${full ? 'clear all' : 'select all'}`}
-              className="self-start cursor-pointer rounded-sm font-sans text-label tracking-[0.08em] text-ink-2 uppercase transition-colors hover:text-ink-0"
-            >
-              {row.label}
-            </button>
-            <div className="flex flex-wrap gap-1.5">
-              {row.cells
-                .filter((cell) => cell !== null)
-                .map((cell) => (
-                  <div key={cell.id} className="w-16">
-                    <GridCell
-                      character={cell}
-                      selected={deck.has(cell.id)}
-                      onToggle={deck.toggle}
-                    />
-                  </div>
-                ))}
-            </div>
-          </section>
+          <button
+            type="button"
+            onClick={() => (full ? deck.deselect(ids) : deck.select(ids))}
+            // Opens with the VISIBLE text, so the accessible name and what a
+            // voice-control user can read agree.
+            aria-label={`${label}${matrix ? ' row' : ''}, ${full ? 'clear all' : 'select all'}`}
+            className={
+              matrix
+                ? 'flex cursor-pointer items-center justify-center rounded-sm px-0.5 text-center font-sans text-label leading-tight tracking-[0.08em] text-ink-2 uppercase transition-colors hover:bg-accent-soft hover:text-ink-0'
+                : 'cursor-pointer self-start rounded-sm font-sans text-label tracking-[0.08em] text-ink-2 uppercase transition-colors hover:text-ink-0'
+            }
+          >
+            {label}
+          </button>
         )
-      })}
-    </div>
+      }}
+      renderCell={(character) => (
+        <GridCell
+          character={character}
+          selected={deck.has(character.id)}
+          onToggle={deck.toggle}
+        />
+      )}
+    />
   )
 }

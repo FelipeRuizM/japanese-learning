@@ -17,6 +17,7 @@ const Flashcards = lazy(() =>
   import('./pages/Flashcards').then((m) => ({ default: m.Flashcards })),
 )
 const Quiz = lazy(() => import('./pages/Quiz').then((m) => ({ default: m.Quiz })))
+const Sounds = lazy(() => import('./pages/Sounds').then((m) => ({ default: m.Sounds })))
 const Styleguide = lazy(() =>
   import('./pages/Styleguide').then((m) => ({ default: m.Styleguide })),
 )
@@ -34,6 +35,7 @@ const router = createHashRouter([
       { index: true, element: <Characters /> },
       { path: 'flashcards', element: <Flashcards /> },
       { path: 'quiz', element: <Quiz /> },
+      { path: 'pronunciation', element: <Sounds /> },
       { path: 'styleguide', element: <Styleguide /> },
       { path: '*', element: <NotFound /> },
     ],

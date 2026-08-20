@@ -3,8 +3,9 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-19. The build is complete at v1.7.** All seven phases are done and
-> all five features in §1 are built. (v1.0 scaffold; v1.1 reversed the design system to
+> **Status — 2026-08-19. Complete at v1.8.** All seven phases are done, all five
+> features in §1 are built, and a sixth — the pronunciation chart — was added
+> afterwards at the owner's request. (v1.0 scaffold; v1.1 reversed the design system to
 > dark only, see §7; v1.2 the character model and data; v1.3 the grid and deck; v1.4
 > pronunciation; v1.5 the quiz; v1.6 flashcards; v1.7 the quality pass.)
 >
@@ -42,6 +43,12 @@ Five features, and no more:
 3. **Pronunciation** — audio and romaji, on click.
 4. **Example words** — at least one real word per character, with romaji and English.
 5. **Quiz** — recall over the selected deck, mixing both directions at random.
+6. **Pronunciation chart** — the whole set as a reference; tap any character to hear
+   it. Added after the original five, on request.
+
+   > **It reads the whole set, not the deck.** It is a reference you dip into, not a
+   > drill: gating it behind a selection would make the obvious question — _what does
+   > this one sound like?_ — take three steps.
 
 ### The character-set rule
 
@@ -276,11 +283,28 @@ Everything is **desktop and mobile**. Design for a **375px viewport first**, the
 breathe on desktop.
 
 ```
-#/            Grid        — select characters into the deck
-#/flashcards  Flashcards  — flip through the deck
-#/quiz        Quiz        — recall over the deck
-#/styleguide  Styleguide  — every token and component in isolation
+#/               Grid        — select characters into the deck
+#/flashcards     Flashcards  — flip through the deck
+#/quiz           Quiz        — recall over the deck
+#/pronunciation  Sounds      — the whole set; tap a character to hear it
+#/styleguide     Styleguide  — every token and component in isolation
 ```
+
+### The two grids
+
+`GridLayout` holds the chart SHAPE — the matrix/flow branch, the column headers, the
+gaps — and takes render props for the cell and the row label. Two grids consume it:
+
+|                         | Cell                                       | Row label              |
+| ----------------------- | ------------------------------------------ | ---------------------- |
+| **Deck selector**       | `GridCell` — a toggle, `aria-pressed`      | selects/clears the row |
+| **Pronunciation chart** | `SoundCell` — an action, no `aria-pressed` | plain text             |
+
+> **A `SoundCell` is not a `GridCell` with a different handler.** One is a toggle that
+> stays on; the other performs an action and returns to rest. Announcing "pressed" for
+> the second would misdescribe it. Sharing the _layout_ while keeping the _behaviour_
+> separate is the split that matters — duplicating the layout instead would mean a
+> future `flow` set had to be made to work twice.
 
 ### The deck
 
