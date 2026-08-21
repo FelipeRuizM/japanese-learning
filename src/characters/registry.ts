@@ -1,5 +1,6 @@
 import type { Character, CharacterSet } from '../types/characters'
 import { HIRAGANA } from './hiragana'
+import { KATAKANA } from './katakana'
 
 /**
  * THE CHARACTER-SET REGISTRY (CLAUDE.md §1).
@@ -8,15 +9,22 @@ import { HIRAGANA } from './hiragana'
  * `CharacterSet`. They must never import a script data module and must never
  * name a script — a test enforces that boundary.
  *
- * Adding katakana later means adding a data module and one entry here. Adding
- * kanji means that plus the `layout: 'flow'` branch the grid already has.
+ * Katakana arrived exactly as promised — a data module and one entry here, with
+ * no change to a component, a type or the grid. Adding kanji means the same
+ * plus the `layout: 'flow'` branch the grid already has.
  *
  * Do NOT over-abstract past this. A registry plus concrete data. No plugin
  * framework, no generic schema engine.
  */
-export const CHARACTER_SETS: readonly CharacterSet[] = [HIRAGANA]
+export const CHARACTER_SETS: readonly CharacterSet[] = [HIRAGANA, KATAKANA]
 
-/** The set a viewer sees when they haven't chosen one. */
+/**
+ * The set a viewer sees when they haven't chosen one.
+ *
+ * It is the FIRST registered set rather than a named one, so the pages that
+ * open on it stay script-agnostic. There is a picker now, and its state is
+ * per-page: the deck is the thing worth carrying between screens, and it does.
+ */
 export const DEFAULT_CHARACTER_SET: CharacterSet = HIRAGANA
 
 export function characterSetById(id: string): CharacterSet | undefined {

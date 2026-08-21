@@ -5,7 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Writing } from './Writing'
 import { DeckProvider } from '../data/DeckProvider'
 import { CharacterGrid } from '../components/CharacterGrid'
-import { allCharacters, DEFAULT_CHARACTER_SET } from '../characters/registry'
+import {
+  allCharacters,
+  characterSetById,
+  DEFAULT_CHARACTER_SET,
+  everyCharacter,
+} from '../characters/registry'
 
 class FakeUtterance {
   lang = ''
@@ -60,7 +65,12 @@ const renderWithGrid = () =>
     </MemoryRouter>,
   )
 
-const ALL = allCharacters(DEFAULT_CHARACTER_SET)
+/**
+ * EVERY registered character, not one set's worth. With nothing selected this
+ * screen draws from the whole registry — a second script did not narrow the
+ * pool, it doubled it.
+ */
+const ALL = everyCharacter()
 const GLYPHS = new Set(ALL.map((c) => c.glyph))
 
 /**
@@ -88,7 +98,7 @@ describe('writing practice', () => {
     expect(
       screen.getByRole('button', { name: 'Play a random sound' }),
     ).toBeInTheDocument()
-    expect(screen.queryByText('Write this')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Write this in/)).not.toBeInTheDocument()
   })
 
   it('plays a sound and shows the romaji as the prompt', async () => {
@@ -98,7 +108,7 @@ describe('writing practice', () => {
 
     await user.click(screen.getByRole('button', { name: 'Play a random sound' }))
 
-    expect(screen.getByText('Write this')).toBeInTheDocument()
+    expect(screen.getByText(/Write this in/)).toBeInTheDocument()
     // It spoke the glyph, never the romaji.
     expect(spoken).toHaveLength(1)
     expect(GLYPHS.has(spoken[0] ?? '')).toBe(true)
@@ -167,7 +177,12 @@ describe('writing practice', () => {
 
   it('draws from the whole set when nothing is selected', () => {
     renderWriting()
-    expect(screen.getByText(/Drawing from all 71 characters/)).toBeInTheDocument()
+    expect(
+      screen.getByText(`Drawing from all ${ALL.length} characters —`, {
+        exact: false,
+      }),
+    ).toBeInTheDocument()
+    expect(ALL.length).toBe(142)
   })
 
   /**
@@ -190,8 +205,55 @@ describe('writing practice', () => {
       await user.click(screen.getByRole('button', { name: 'Next sound' }))
     }
 
-    const kRow = new Set(ALL.filter((c) => c.rowId === 'k').map((c) => c.glyph))
+    // Scoped to the chart that was rendered: 'k' names a row in BOTH scripts,
+    // so matching on the row id alone would accept a character the deck never
+    // held and the assertion would pass for the wrong reason.
+    const kRow = new Set(
+      allCharacters(DEFAULT_CHARACTER_SET)
+        .filter((c) => c.rowId === 'k')
+        .map((c) => c.glyph),
+    )
+    expect(kRow.size).toBe(5)
     for (const glyph of spoken) expect(kRow.has(glyph)).toBe(true)
+  })
+
+  /**
+   * WHICH SCRIPT, not just which sound. あ and ア are both "a", so a prompt that
+   * gave only the reading would be unanswerable — the learner would not know
+   * which shape to draw. The name has to be the one belonging to the character
+   * that was actually spoken, not a guess.
+   */
+  it('names the script to write, and names the right one', async () => {
+    const spoken = installVoice()
+    const user = userEvent.setup()
+    renderWriting()
+
+    await user.click(screen.getByRole('button', { name: 'Play a random sound' }))
+
+    const character = ALL.find((c) => c.glyph === spoken[0])
+    expect(character).toBeDefined()
+    const label = characterSetById(character?.script ?? '')?.label
+    expect(label).toBeDefined()
+    expect(screen.getByText(`Write this in ${label ?? ''}`)).toBeInTheDocument()
+  })
+
+  /**
+   * An `aria-label` is DOM. The replay control names the glyph everywhere else
+   * in the app, which is right where the glyph is already on screen — here it
+   * would hand a screen-reader or braille user the answer before the reveal,
+   * which is exactly what CLAUDE.md §1 forbids.
+   */
+  it('keeps the glyph out of the replay control’s accessible name', async () => {
+    const spoken = installVoice()
+    const user = userEvent.setup()
+    renderWriting()
+
+    await user.click(screen.getByRole('button', { name: 'Play a random sound' }))
+
+    const replay = screen.getByRole('button', { name: 'Play the sound again' })
+    const name = replay.getAttribute('aria-label') ?? ''
+    expect(name).not.toContain(spoken[0])
+    for (const glyph of GLYPHS) expect(name).not.toContain(glyph)
   })
 
   it('offers a replay without advancing', async () => {
@@ -200,7 +262,7 @@ describe('writing practice', () => {
     renderWriting()
 
     await user.click(screen.getByRole('button', { name: 'Play a random sound' }))
-    await user.click(screen.getByRole('button', { name: /Play the pronunciation of/ }))
+    await user.click(screen.getByRole('button', { name: 'Play the sound again' }))
 
     expect(spoken).toHaveLength(2)
     expect(spoken[1]).toBe(spoken[0])

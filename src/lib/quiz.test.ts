@@ -8,7 +8,11 @@ import {
   type QuizQuestion,
 } from './quiz'
 import type { Rng } from './shuffle'
-import { allCharacters, DEFAULT_CHARACTER_SET } from '../characters/registry'
+import {
+  allCharacters,
+  DEFAULT_CHARACTER_SET,
+  everyCharacter,
+} from '../characters/registry'
 import type { Character } from '../types/characters'
 
 const ALL = allCharacters(DEFAULT_CHARACTER_SET)
@@ -199,6 +203,99 @@ describe('buildRound', () => {
       const shown = q.options.map((o) => displayValue(o, q.direction))
       expect(new Set(shown).size).toBe(4)
       expect(q.options.map((o) => o.id)).toContain(q.answer.id)
+    }
+  })
+})
+
+/**
+ * A DECK THAT SPANS TWO SCRIPTS.
+ *
+ * あ and ア are the same sound written twice, which is the お/を problem again
+ * with seventy-one instances instead of three. It needed no change to this
+ * module: `collides` is keyed on romaji rather than on a named pair, so the
+ * generality written in Phase 6 absorbed a whole second script — and these
+ * tests are what keep that true.
+ *
+ * The stakes are the same in both directions. Showing "a" against both あ and
+ * ア makes two options correct; showing あ and ア against the prompt "a" makes
+ * the prompt ambiguous.
+ */
+describe('a deck spanning two scripts', () => {
+  const EVERYTHING = everyCharacter()
+
+  /** The same reading in a different script — か's counterpart is カ. */
+  const twin = (character: Character): Character => {
+    const found = EVERYTHING.find(
+      (c) => c.romaji === character.romaji && c.script !== character.script,
+    )
+    if (!found) throw new Error(`No counterpart for ${character.glyph}`)
+    return found
+  }
+
+  it('never puts a character beside its counterpart in the other script', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const answer = EVERYTHING[seed % EVERYTHING.length]
+      if (!answer) continue
+      const question = buildQuestion(answer, EVERYTHING, EVERYTHING, seeded(seed))
+      const glyphs = question.options.map((o) => o.glyph)
+      expect(glyphs).not.toContain(twin(answer).glyph)
+    }
+  })
+
+  it('never shows one displayed value twice, in either direction', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const answer = EVERYTHING[seed % EVERYTHING.length]
+      if (!answer) continue
+      const question = buildQuestion(answer, EVERYTHING, EVERYTHING, seeded(seed))
+      const shown = question.options.map((o) => displayValue(o, question.direction))
+      expect(new Set(shown).size).toBe(shown.length)
+      expect(question.options).toHaveLength(OPTION_COUNT)
+    }
+  })
+
+  /**
+   * The subtler half, exactly as with お/を: when the answer is a third
+   * character, both members of a cross-script pair are eligible distractors and
+   * they must not both be drawn.
+   */
+  it('never draws both halves of a pair as distractors for a third character', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const answer = EVERYTHING[seed % EVERYTHING.length]
+      if (!answer) continue
+      const distractors = distractorsFor(answer, EVERYTHING, EVERYTHING, seeded(seed))
+      const readings = distractors.map((d) => d.romaji)
+      expect(new Set(readings).size).toBe(readings.length)
+    }
+  })
+
+  /**
+   * A two-character deck of a pair is the worst case the fallback exists for:
+   * the deck cannot supply a single legal distractor, because the only other
+   * character in it collides with the answer.
+   */
+  it('fills four options for a deck holding nothing but one pair', () => {
+    const a = ALL[0]
+    if (!a) throw new Error('empty set')
+    const deck = [a, twin(a)]
+
+    for (let seed = 1; seed <= 50; seed++) {
+      const question = buildQuestion(a, deck, EVERYTHING, seeded(seed))
+      expect(question.options).toHaveLength(OPTION_COUNT)
+      expect(question.options.map((o) => o.glyph)).not.toContain(twin(a).glyph)
+      const shown = question.options.map((o) => displayValue(o, question.direction))
+      expect(new Set(shown).size).toBe(OPTION_COUNT)
+    }
+  })
+
+  it('still asks about the character it was given', () => {
+    const round = buildRound(
+      [ALL[0], twin(ALL[0] as Character)].filter((c) => c !== undefined),
+      EVERYTHING,
+      seeded(7),
+    )
+    expect(round).toHaveLength(2)
+    for (const question of round) {
+      expect(question.options).toContain(question.answer)
     }
   })
 })

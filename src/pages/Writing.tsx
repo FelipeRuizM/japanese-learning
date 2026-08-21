@@ -1,10 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Character } from '../types/characters'
-import {
-  allCharacters,
-  characterById,
-  DEFAULT_CHARACTER_SET,
-} from '../characters/registry'
+import { characterById, characterSetById, everyCharacter } from '../characters/registry'
 import { useDeck } from '../data/useDeck'
 import { systemRng } from '../lib/shuffle'
 import { usePronunciation } from '../lib/usePronunciation'
@@ -37,7 +33,7 @@ export function Writing() {
    * you have made one, is clearly what you want to practise. The pool is named
    * on screen so the behaviour is stated rather than guessed at.
    */
-  const wholeSet = useMemo(() => allCharacters(DEFAULT_CHARACTER_SET), [])
+  const wholeSet = useMemo(() => everyCharacter(), [])
   const pool = useMemo(() => {
     const selected = [...deck.selected]
       .map((id) => characterById(id))
@@ -95,6 +91,15 @@ export function Writing() {
   )
 }
 
+/**
+ * The name of the chart a character belongs to. It falls back to the plain
+ * prompt rather than throwing: an unregistered script is a data problem, and it
+ * should not take the exercise down with it.
+ */
+function setLabelFor(character: Character): string {
+  return characterSetById(character.script)?.label ?? 'the chart'
+}
+
 function PoolNote({ count, usingDeck }: { count: number; usingDeck: boolean }) {
   return (
     <p className="m-0 font-sans text-sm text-ink-2">
@@ -131,17 +136,31 @@ function Prompt({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-4 rounded-md border border-rule py-10">
-        <Label>Write this</Label>
-        {/* The romaji is the prompt. The glyph is the answer, and it is not
-            rendered at all until the reveal — not hidden with CSS, which would
-            leave it in the DOM for a screen reader to read out. */}
-        <p
-          aria-live="polite"
-          className="m-0 font-sans text-6xl font-semibold text-ink-0"
-        >
-          {character.romaji}
-        </p>
-        <SpeakButton character={character} status={status} onSpeak={onReplay} />
+        {/* The prompt, and the whole prompt, is the live region: the SCRIPT
+            changes from one sound to the next just as the reading does, and a
+            reading announced without it would be half a question. */}
+        <div aria-live="polite" className="flex flex-col items-center gap-4">
+          {/* WHICH SCRIPT, not just which sound. With one chart registered "a"
+              was unambiguous; with two, あ and ア are the same sound and a
+              learner told only "a" cannot know which shape to draw. The name
+              comes from the character's own set, so a third script needs
+              nothing here. */}
+          <Label>Write this in {setLabelFor(character)}</Label>
+          {/* The romaji is the prompt. The glyph is the answer, and it is not
+              rendered at all until the reveal — not hidden with CSS, which
+              would leave it in the DOM for a screen reader to read out. */}
+          <p className="m-0 font-sans text-6xl font-semibold text-ink-0">
+            {character.romaji}
+          </p>
+        </div>
+        {/* The default accessible name of this control names the glyph, which
+            would put the answer in the DOM. Here it says what it does. */}
+        <SpeakButton
+          character={character}
+          status={status}
+          onSpeak={onReplay}
+          label="Play the sound again"
+        />
       </div>
 
       {revealed ? (

@@ -108,6 +108,32 @@ await scan('writing (revealed)', async (page) => {
   await page.waitForTimeout(400)
 })
 
+/**
+ * The second chart, on both screens that carry a picker. A `flow`-layout set
+ * would need its own entry here; both registered sets are matrices.
+ */
+await scan('grid (second chart)', async (page) => {
+  await open('#/')(page)
+  await page.getByRole('button', { name: 'Katakana' }).click()
+  await page.getByRole('button', { name: 'K row, select all' }).click()
+  await page.waitForTimeout(300)
+})
+
+await scan('grid (deck spans both)', async (page) => {
+  await withDeck(page)
+  await page.getByRole('button', { name: 'Katakana' }).click()
+  // `exact` matters: every row label is also "…, select all".
+  await page.getByRole('button', { name: 'Select all', exact: true }).click()
+  await page.waitForTimeout(300)
+})
+
+await scan('pronunciation (second chart)', async (page) => {
+  await open('#/pronunciation')(page)
+  await page.getByRole('button', { name: 'Katakana' }).click()
+  await page.getByRole('button', { name: 'カ ka, play' }).click()
+  await page.waitForTimeout(400)
+})
+
 await scan('quiz (answered)', async (page) => {
   await withDeck(page)
   await page.getByRole('link', { name: 'Quiz me' }).click()

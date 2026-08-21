@@ -3,7 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Sounds } from './Sounds'
-import { allCharacters, DEFAULT_CHARACTER_SET } from '../characters/registry'
+import {
+  allCharacters,
+  CHARACTER_SETS,
+  DEFAULT_CHARACTER_SET,
+} from '../characters/registry'
+
+const [FIRST, SECOND] = CHARACTER_SETS
 
 class FakeUtterance {
   lang = ''
@@ -146,5 +152,66 @@ describe('the pronunciation chart', () => {
         }),
       ).toBeInTheDocument()
     }
+  })
+})
+
+describe('the chart picker', () => {
+  it('swaps which chart is on the reference', async () => {
+    const user = userEvent.setup()
+    renderSounds()
+    expect(SECOND).toBeDefined()
+    if (!SECOND || !FIRST) return
+
+    expect(screen.getByRole('button', { name: 'か ka, play' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: SECOND.label }))
+
+    expect(
+      screen.queryByRole('button', { name: 'か ka, play' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'カ ka, play' })).toBeInTheDocument()
+    // One chart at a time — the second is a swap, not an addition.
+    expect(screen.getAllByRole('button', { name: /, play$/ })).toHaveLength(71)
+
+    for (const character of allCharacters(SECOND)) {
+      expect(
+        screen.getByRole('button', {
+          name: `${character.glyph} ${character.romaji}, play`,
+        }),
+      ).toBeInTheDocument()
+    }
+  })
+
+  it('speaks the character belonging to the chart on screen', async () => {
+    const spoken = installVoice()
+    const user = userEvent.setup()
+    renderSounds()
+    if (!SECOND) return
+
+    await user.click(screen.getByRole('button', { name: SECOND.label }))
+    await user.click(screen.getByRole('button', { name: 'カ ka, play' }))
+
+    expect(spoken).toEqual(['カ'])
+  })
+
+  /**
+   * The echo below the chart is what you last tapped. After a swap that
+   * character is no longer on the chart in front of you, and leaving it there
+   * would read as belonging to the set you are now looking at.
+   */
+  it('clears the echo when the chart changes', async () => {
+    installVoice()
+    const user = userEvent.setup()
+    renderSounds()
+    if (!SECOND || !FIRST) return
+
+    await user.click(screen.getByRole('button', { name: 'ね ne, play' }))
+    expect(screen.getByText('ねこ')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: SECOND.label }))
+    expect(screen.queryByText('ねこ')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: FIRST.label }))
+    expect(screen.queryByText('ねこ')).not.toBeInTheDocument()
   })
 })

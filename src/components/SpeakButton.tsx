@@ -15,11 +15,22 @@ export function SpeakButton({
   status,
   onSpeak,
   className = '',
+  label,
 }: {
   character: Character
   status: PronunciationStatus
   onSpeak: (character: Character) => void
   className?: string
+  /**
+   * Overrides the accessible name.
+   *
+   * The default names the glyph, which is right everywhere the glyph is already
+   * on screen — and wrong on the one screen where it is the answer. Writing
+   * practice requires the glyph to be absent from the DOM until the reveal, and
+   * an `aria-label` is DOM: a screen reader announces it and a braille display
+   * renders it. CLAUDE.md §1.
+   */
+  label?: string
 }) {
   const unavailable = status === 'unavailable'
 
@@ -31,7 +42,7 @@ export function SpeakButton({
       aria-label={
         unavailable
           ? `Pronunciation unavailable — no Japanese voice on this device`
-          : `Play the pronunciation of ${character.glyph}`
+          : (label ?? `Play the pronunciation of ${character.glyph}`)
       }
       className={[
         'inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2',

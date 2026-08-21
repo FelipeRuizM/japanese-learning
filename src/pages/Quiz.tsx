@@ -1,10 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { Character } from '../types/characters'
-import {
-  allCharacters,
-  characterById,
-  DEFAULT_CHARACTER_SET,
-} from '../characters/registry'
+import { characterById, everyCharacter } from '../characters/registry'
 import { useDeck } from '../data/useDeck'
 import { buildRound, type QuizQuestion } from '../lib/quiz'
 import { systemRng } from '../lib/shuffle'
@@ -52,7 +48,12 @@ function Round({ deck, onAgain }: { deck: Character[]; onAgain: () => void }) {
   // which React is free to discard and recompute — that would reshuffle the
   // questions underneath the learner.
   const [questions] = useState<QuizQuestion[]>(() =>
-    buildRound(deck, allCharacters(DEFAULT_CHARACTER_SET), systemRng),
+    // The last-resort distractor pool is EVERY registered character, not just
+    // the ones sharing a script with the answer. It is only ever reached by a
+    // deck too small to fill four options from itself, and a same-sounding
+    // character can never be drawn regardless — `collides` is keyed on romaji,
+    // so か can no more sit beside カ than お can beside を.
+    buildRound(deck, everyCharacter(), systemRng),
   )
 
   const [index, setIndex] = useState(0)

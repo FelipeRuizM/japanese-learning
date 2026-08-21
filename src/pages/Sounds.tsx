@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import type { Character } from '../types/characters'
-import { DEFAULT_CHARACTER_SET } from '../characters/registry'
+import type { Character, ScriptId } from '../types/characters'
+import { CHARACTER_SETS } from '../characters/registry'
 import { usePronunciation } from '../lib/usePronunciation'
 import { PronunciationNote, SpeakButton } from '../components/SpeakButton'
 import { GridLayout } from '../components/GridLayout'
 import { SoundCell } from '../components/SoundCell'
-import { Glyph, Label } from '../components/ui/primitives'
+import { SetPicker } from '../components/SetPicker'
+import { useCharacterSet } from '../lib/useCharacterSet'
+import { Glyph } from '../components/ui/primitives'
 
 /**
  * The pronunciation chart: tap any character, hear it.
@@ -20,7 +22,7 @@ import { Glyph, Label } from '../components/ui/primitives'
  * reveal never depends on audio).
  */
 export function Sounds() {
-  const set = DEFAULT_CHARACTER_SET
+  const { set, choose } = useCharacterSet()
   const { status, speak } = usePronunciation()
   const [lastPlayed, setLastPlayed] = useState<Character | null>(null)
 
@@ -29,14 +31,29 @@ export function Sounds() {
     speak(character)
   }
 
+  /**
+   * Switching charts clears the echo. What you last tapped is no longer on the
+   * chart in front of you, and leaving it below would read as a character from
+   * the set you are now looking at.
+   */
+  const switchTo = (id: ScriptId) => {
+    setLastPlayed(null)
+    choose(id)
+  }
+
   return (
     <section className="flex flex-col gap-6">
-      <header className="flex flex-col gap-2">
-        <Label>{set.label}</Label>
+      <header className="flex flex-col gap-3">
         <h2 className="m-0 font-sans text-2xl font-semibold text-ink-0">
           Tap a character to hear it
         </h2>
         <PronunciationNote status={status} />
+        <SetPicker
+          sets={CHARACTER_SETS}
+          activeId={set.id}
+          onChange={switchTo}
+          label="Chart"
+        />
       </header>
 
       <GridLayout

@@ -1,15 +1,20 @@
 import { useState, type ReactNode } from 'react'
-import type { Character } from '../types/characters'
+import type { Character, ScriptId } from '../types/characters'
 import { CharacterGrid } from '../components/CharacterGrid'
 import { PronunciationNote, SpeakButton } from '../components/SpeakButton'
 import { QuizCard } from '../components/QuizCard'
 import { Flashcard } from '../components/Flashcard'
 import { EmptyDeck } from '../components/EmptyDeck'
 import { buildQuestion } from '../lib/quiz'
-import { allCharacters, DEFAULT_CHARACTER_SET } from '../characters/registry'
+import {
+  allCharacters,
+  CHARACTER_SETS,
+  DEFAULT_CHARACTER_SET,
+} from '../characters/registry'
 import { usePronunciation } from '../lib/usePronunciation'
 import { GridCell, GridGap } from '../components/GridCell'
 import { SoundCell } from '../components/SoundCell'
+import { SetPicker } from '../components/SetPicker'
 import { FLOW_FIXTURE } from '../characters/flowFixture'
 import {
   Button,
@@ -138,6 +143,14 @@ function LivePronunciation() {
       <SpeakButton character={SAMPLE} status={status} onSpeak={speak} />
       <Label>status: {status}</Label>
     </div>
+  )
+}
+
+/** Live, because a picker that cannot be pressed shows nothing worth seeing. */
+function PickerDemo() {
+  const [id, setId] = useState<ScriptId>(DEFAULT_CHARACTER_SET.id)
+  return (
+    <SetPicker sets={CHARACTER_SETS} activeId={id} onChange={setId} label="Chart" />
   )
 }
 
@@ -288,6 +301,17 @@ export function Styleguide() {
           At rest and last-played. It is an action, not a toggle, so it carries no
           <code> aria-pressed</code> — and it is never disabled, because a tap still
           reveals the reading on a device with no Japanese voice.
+        </p>
+      </Section>
+
+      <Section title="Set picker">
+        <PickerDemo />
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          Which chart is on screen. It takes the registry and reports an id, so it never
+          names a script and never knows how many there are &mdash; with a single set
+          registered it renders nothing at all, because a picker offering one choice is
+          furniture. The pressed state is the same ground-on-accent inversion a selected
+          cell uses: the picker and the chart under it are saying the same thing.
         </p>
       </Section>
 
