@@ -3,17 +3,24 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-20. Complete at v1.9.** All seven phases are done and all five
+> **Status — 2026-08-21. Complete at v2.0.** All seven phases are done and all five
 > features in §1 are built, plus two added afterwards on request — the pronunciation
-> chart and writing practice — and the **dakuten/handakuten rows**, taking the set from
-> 46 characters to 71. (v1.0 scaffold; v1.1 reversed the design system to
-> dark only, see §7; v1.2 the character model and data; v1.3 the grid and deck; v1.4
-> pronunciation; v1.5 the quiz; v1.6 flashcards; v1.7 the quality pass.)
+> chart and writing practice — the **dakuten/handakuten rows**, and now **katakana**.
+> The app teaches **142 characters across two scripts**. (v1.0 scaffold; v1.1 reversed
+> the design system to dark only, see §7; v1.2 the character model and data; v1.3 the
+> grid and deck; v1.4 pronunciation; v1.5 the quiz; v1.6 flashcards; v1.7 the quality
+> pass; v1.8 the pronunciation chart; v1.9 the voiced rows and writing practice.)
+>
+> **v2.0 is the payoff the whole model was built for, and the prediction held to the
+> letter:** a data module and one registry entry. No type changed, no component was
+> rewritten, and `src/lib/quiz.ts` was not touched at all — see §3.5 for what it did
+> cost, which was not nothing.
 >
 > **It has never been deployed** — the repository has no GitHub remote, so the Actions
 > workflow has never run. That is the only thing standing between this and a live site.
 >
-> Katakana is the natural next addition: a data module plus one registry entry (§1).
+> Kanji is the remaining script, and it is the one that needs the `layout: 'flow'`
+> branch (§3.2).
 
 ---
 
@@ -34,8 +41,8 @@ It is the durable spec. `PLAN.md` holds the phased build order.
 
 ## 1. What this is
 
-A practice app for a **beginner learning Japanese**. Today it teaches **hiragana**. The
-architecture must assume **katakana and kanji arrive later**.
+A practice app for a **beginner learning Japanese**. It teaches **hiragana and
+katakana**. The architecture must assume **kanji arrives later**.
 
 Five features, and no more:
 
@@ -61,14 +68,24 @@ Five features, and no more:
    > drill: gating it behind a selection would make the obvious question — _what does
    > this one sound like?_ — take three steps.
 
+   > **The prompt names the script.** あ and ア are both "a", so a reading alone does not
+   > say which shape to draw. The name comes from `character.script` through the
+   > registry, so a third script needs no change here.
+   >
+   > **This is also why `SpeakButton` takes a `label` override.** Its default accessible
+   > name is "Play the pronunciation of あ", which is right everywhere the glyph is
+   > already on screen and wrong on this one screen, where an `aria-label` is just
+   > another way of putting the answer in the DOM.
+
 ### The character-set rule
 
 There is a **character-set registry** — one entry per script. The grid, the flashcards
 and the quiz **iterate the registry and consume a `CharacterSet`**. They must never
 import the hiragana data module and must never contain the string `'hiragana'`.
 
-Adding katakana later means **adding a data module and one registry entry**. Adding
-kanji means that plus using the `layout: 'flow'` branch that already exists.
+Adding katakana meant **adding a data module and one registry entry**, exactly as
+written here — see §3.5. Adding kanji means that plus using the `layout: 'flow'` branch
+that already exists.
 
 > **Do not over-abstract past this.** A registry plus concrete data. No plugin
 > framework, no generic schema engine, no runtime-configurable field system. This is
@@ -173,10 +190,17 @@ export type CharacterSet = {
   disabled character and never collapsed away, because the shape of the chart is part of
   what is being learned.
 
-### 3.3 Hiragana scope and layout
+### 3.3 Kana scope and layout
 
-**71 characters: the 46 gojūon, the 20 dakuten rows (が, ざ, だ, ば) and the 5
-handakuten (ぱ).** Yōon (きゃ) remains out of scope.
+**Each script is 71 characters: the 46 gojūon, the 20 dakuten rows and the 5
+handakuten — 142 in all.** Yōon (きゃ / キャ) remains out of scope in both.
+
+**The two charts are the same chart twice.** Same sixteen rows, same row ids, same row
+labels, same gaps, same three homophone pairs, same id suffixes. That is not
+copy-paste inertia: a learner reading them side by side must find the same sound in the
+same cell, and `katakana.test.ts` asserts the alignment row by row and reading by
+reading. A row added to one and not the other is a test failure, not a discovery made
+later on screen.
 
 > **The voiced rows were added after v1.8, and §3.3's prediction held exactly.** They
 > needed no type change and no component change — `src/characters/hiragana.ts` was the
@@ -197,13 +221,22 @@ w        わ   —    —    —    を
 n        ん
 ```
 
+The katakana chart is that grid again, cell for cell: ア イ ウ エ オ, カ キ ク ケ コ, and
+so on down to ン, with the same two gaps in the ヤ-row and three in the ワ-row.
+
 > **ん is placed in the first column of the last row because a gojūon chart has nowhere
 > else to put it — not because it is an 'a'-column character.** Its `vowel` is `null`.
 > Layout uses the cell position; the quiz uses `vowel`. Nothing downstream is misled.
+> **ン** is built by hand in its own module for exactly the same reason.
 
-Romaji follows **Hepburn**: `shi`, `chi`, `tsu`, `fu`, and `を` is romanised **`o`**
-(its pronunciation) with the note that it is written _wo_. The quiz answers on
-pronunciation, so `お` and `を` would collide — see §6.
+Romaji follows **Hepburn**: `shi`, `chi`, `tsu`, `fu`, and `を` / `ヲ` are romanised
+**`o`** (their pronunciation) with the note that they are written _wo_. The quiz answers
+on pronunciation, so `お` and `を` would collide — see §6.
+
+**With two scripts, every reading collides**: あ and ア are both `a`, and so on 71 times
+over. The quiz needed no change for it, because its exclusion was already keyed on
+romaji rather than on a named pair (§6). Ids stay unique because they are
+script-qualified and built from the written form.
 
 ### 3.4 Example words — the rules
 
@@ -213,21 +246,73 @@ pronunciation, so `お` and `を` would collide — see §6.
   `word.kana.includes(character.glyph)` for every entry.
 - Keep them short, common, and concrete. This is context for a sound, not vocabulary
   study.
-- Two characters are exceptions and are documented here so nobody "fixes" them:
+- **Katakana example words are loanwords**, because that is what the script is for: a
+  beginner meets it on a menu and a shop sign long before anywhere else. They may use
+  the prolonged sound mark **ー** (U+30FC), which is how katakana writes a long vowel —
+  `コーヒー`, not `コオヒイ`. The hiragana rule deliberately excludes ー for the mirror
+  reason: hiragana doubles the vowel, so a ー appearing there means a katakana word
+  slipped in. Each script's test carries its own character-range regex.
+- **Five characters are exceptions and are documented here so nobody "fixes" them:**
   - **を** is a grammatical particle and never appears inside a word. Its example is a
     short phrase: `ほんをよむ` / _hon o yomu_ / "to read a book".
   - **ん** never appears word-initially. Its example is `みかん` / _mikan_ /
     "mandarin orange".
+  - **ヲ** is worse off than を: the particle is written in hiragana in modern Japanese,
+    so ヲ appears in no ordinary word at all. Its example is `ホンヲヨム` — the
+    all-katakana style of old telegrams and signage, which is where a learner actually
+    meets it.
+  - **ヂ** and **ヅ** appear in no loanword, because modern spelling uses ジ and ズ. Their
+    examples are the places the characters genuinely survive: `ラヂオ` / _rajio_, the
+    pre-war spelling of "radio" still seen on old shopfronts, and `ヅケ` / _zuke_,
+    marinated tuna as written on sushi menus.
+
+  > The last three could each have been faked with a katakana transliteration of a
+  > native word. Showing a learner where a rare character **really** occurs is the more
+  > honest answer, and it teaches the rarity along with the shape.
+
 - Example words appear on the **flashcard back** and on the **quiz answer reveal**. The
   grid cell's click is the select/deselect toggle, so grid cells carry no detail panel.
 
 ---
 
+### 3.5 What a second script actually cost
+
+Kept because the next person adding one should know what to expect, and because "it was
+free" would be a lie the code does not support.
+
+**Free, as designed.** `src/types/characters.ts`, `src/lib/quiz.ts`, `src/lib/shuffle.ts`,
+`CharacterGrid`, `GridLayout`, `GridCell`, `SoundCell`, `Flashcard`, `QuizCard`, the deck
+reducer and the provider — **none of them changed.** The quiz in particular absorbed 71
+new homophone pairs without an edit, because `collides` was keyed on romaji rather than
+on the お/を pair (§6). That generality was written in Phase 6 on the guess that it would
+pay for itself, and this is the payment.
+
+**Not free, and none of it was a design flaw.** Every one of these is a question that
+did not exist while there was one script, not a mistake made earlier:
+
+1. **A picker had to exist.** `SetPicker` — it takes the registry and reports an id, and
+   **renders nothing at all when only one set is registered**, so the decision lives in
+   one place rather than as `CHARACTER_SETS.length > 1` on every page that shows a chart.
+2. **The deck spans scripts, so the counts had to be re-thought** (§5).
+3. **Writing practice became ambiguous.** "Write this: a" cannot be answered when あ and
+   ア are both "a", so the prompt names the script — from `character.script` through the
+   registry, never hardcoded (§5).
+4. **A latent defect surfaced in the light of the new one.** `SpeakButton` builds its
+   `aria-label` from the glyph, which on the writing screen put the answer in the DOM
+   before the reveal — the exact thing §1 forbids, missed because axe cannot know that a
+   correctly-labelled button is showing an answer. It takes a `label` override now, and
+   a test asserts no glyph appears in that control's accessible name.
+
+**The rule this suggests for kanji:** the data and the registry entry really are the
+whole mechanical cost. Budget the real work for the questions a third script asks that a
+second one did not — and expect at least one of them to be a defect that was already
+there.
+
 ## 4. Pronunciation
 
 ### 4.1 What was researched, and why it landed here
 
-**There is no off-the-shelf, openly-licensed, coherently-recorded 46-kana audio set.**
+**There is no off-the-shelf, openly-licensed, coherently-recorded kana audio set.**
 Checked 2026-08-19:
 
 | Source                                           | Verdict                                                                                                                                                                     |
@@ -276,7 +361,7 @@ export type PronunciationProvider = {
 headless Chromium, where this path was verified — the control is **disabled and explains
 itself rather than being hidden.** An absent button reads as "this app has no audio",
 which is not what happened. The explanation is rendered **once per screen**, not beside
-all forty-six characters.
+all seventy-one characters of a chart.
 
 Two further behaviours the implementation settled, both tested:
 
@@ -322,10 +407,41 @@ gaps — and takes render props for the cell and the row label. Two grids consum
 > separate is the split that matters — duplicating the layout instead would mean a
 > future `flow` set had to be made to work twice.
 
+### The set picker
+
+`SetPicker` sits above the chart on **Grid** and **Sounds**. One chart at a time: 142
+cells stacked on one page is twice the scroll at 375px and gets worse with every script.
+
+- It takes `CHARACTER_SETS` and reports a `ScriptId`. It never names a script and never
+  counts them — **with one set registered it renders nothing.**
+- `aria-pressed`, like `GridCell` and unlike `SoundCell`: it is a toggle that stays on.
+  It uses the same ground-on-accent inversion a selected cell does, so the picker and
+  the chart under it say "this one is on" the same way.
+- **Its state is per-page** (`useCharacterSet`), not a second context. §2 allows one
+  context and the deck has it. Which chart you last opened is not worth a second one —
+  and because the deck crosses scripts, landing back on the first chart loses nothing:
+  what you selected is still selected, and still says so.
+- Switching charts on **Sounds clears the echo** below it. That character is no longer on
+  the chart in front of you, and leaving it there reads as belonging to the new set.
+
 ### The deck
 
 `DeckProvider` — React context above the router — holds a `Set<string>` of character ids
 plus `toggle`, `selectRow`, `selectAll`, `clear`.
+
+**One deck, spanning every script.** Ids are script-qualified, so `hiragana:ka` and
+`katakana:ka` coexist and the quiz can ask a learner to tell あ from ア — which is the
+drill a two-script app exists to offer. The consequence is that a summary sitting above
+**one** chart has to be careful:
+
+- the count reads against the chart on screen ("12 of 71"), because those are the cells
+  you can see;
+- anything selected elsewhere is stated **separately** ("+8 on another chart") rather
+  than folded into that fraction, which would read as wrong;
+- **`Select all` and `Clear all` act on the visible chart only.** Wiping a deck you
+  cannot see is not something a control should do quietly, so `Clear deck` is a separate
+  button, named for what it does, shown only when it would do something the button
+  beside it would not.
 
 > **In memory only. No `localStorage`, no `sessionStorage`, no URL state.** Persistence
 > is explicitly out of scope (§10). The consequence is that **a refresh always lands on
@@ -504,13 +620,24 @@ kept current. **A component that is not in the styleguide is not done.**
 
 - **TypeScript strict, no `any`.**
 - **Vitest, minimum:**
-  - the data integrity set — 46 characters, unique ids and glyphs, every character has
-    at least one example, every example contains its own character, every example is
-    kana-only
+  - the data integrity set, **per script** — 71 characters, unique ids and glyphs, every
+    character has at least one example, every example contains its own character, every
+    example is written in that script only
+  - **the alignment set** — the two charts have the same rows in the same order, every
+    character has a same-reading counterpart in the other script, and no glyph or id is
+    shared between them
+  - the registry — ids unique across every set at once, every set distinctly labelled
   - **the leak test** — no module outside `src/characters/` names a script
   - the quiz generator — both directions occur, distractor tier ordering, the answer
     never duplicated, the お/を collision, and a two-character deck still yielding four
     distinct options
+  - the quiz **across scripts** — a character never appears beside its counterpart in
+    the other script, no displayed value is shown twice in either direction, and a deck
+    holding nothing but one such pair still fills four options
+  - the picker — every set offered, the active one pressed, the id reported, and
+    **nothing rendered at all when only one set is registered**
+  - writing practice — the prompt names the right script, and **no glyph reaches the
+    replay control's accessible name**
   - the deck reducer — toggle, select row, select all, clear
   - `speechProvider` against a stubbed `speechSynthesis`, including the empty-first-call
     race and the no-Japanese-voice path
@@ -579,8 +706,14 @@ state, dying when the route unmounts.
 1. A wrong Vite `base` gives a blank page with 404s on every asset.
 2. `getVoices()` is empty on first call; wait for `voiceschanged`.
 3. Feeding romaji to a `ja-JP` voice reads it as English. Speak the glyph.
-4. `お` and `を` both romanise to `o` — they cannot be options in the same question.
-5. `ん` has `vowel: null`. Never assume every character has a vowel.
+4. `お` and `を` both romanise to `o` — they cannot be options in the same question. So
+   do `じ`/`ぢ`, `ず`/`づ`, their katakana counterparts, and **every character and its
+   twin in the other script**. The rule is keyed on romaji; do not re-key it on a pair.
+5. `ん` and `ン` have `vowel: null`. Never assume every character has a vowel.
 6. `cells` contains `null` for real gaps. Never `filter(Boolean)` it away for layout.
 7. A deck smaller than 4 still has to produce a 4-option question.
 8. Every refresh empties the deck. That is the design, and the empty state must earn it.
+9. The deck spans scripts, so `deck.count` is NOT "how many of this chart". A summary
+   above one chart has to count within it (§5).
+10. An `aria-label` is DOM. On the writing screen, naming the glyph in one hands over the
+    answer — which is why `SpeakButton` takes a `label` override.

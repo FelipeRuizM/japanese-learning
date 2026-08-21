@@ -13,10 +13,15 @@
  *     npm install --no-save playwright @axe-core/playwright axe-core lighthouse
  *     node scripts/audit-a11y.mjs
  *
- * Last run 2026-08-20 (v1.9): 0 axe violations across twelve route/state
- * combinations, no console output of any kind, and Lighthouse mobile at
- * performance 97–98 (it varies a point run to run), accessibility 100, best
- * practices 100, SEO 100.
+ * Last run 2026-08-21 (v2.0): 0 axe violations across FIFTEEN route/state
+ * combinations — the three added with the second character set cover its chart
+ * on both pickers and a deck holding characters from both scripts at once — no
+ * console output of any kind, and Lighthouse mobile at performance 96–97 (it
+ * varies a point run to run), accessibility 100, best practices 100, SEO 100.
+ *
+ * The second set doubled the compiled-in data — 97.25 KB gzip of JS, up from
+ * 93.85 — without moving performance out of that band. It is data, not work:
+ * the bundle is parsed once and nothing renders more than one chart at a time.
  *
  * Two things it found that the unit tests could not:
  *

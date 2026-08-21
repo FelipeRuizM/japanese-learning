@@ -6,11 +6,12 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ---
 
-## Status — 2026-08-19
+## Status — 2026-08-21
 
-**Complete at v1.9.** All seven phases are done and all five original features are
+**Complete at v2.0.** All seven phases are done and all five original features are
 built, plus two added on request — the **pronunciation chart** and **writing practice** —
-and the **dakuten/handakuten rows**, taking the set from 46 characters to 71.
+the **dakuten/handakuten rows**, and **katakana**. The app teaches **142 characters
+across two scripts**.
 
 Phase 5 was skipped at the owner's request and built after Phase 6, out of order — the
 quiz did not depend on it.
@@ -25,7 +26,9 @@ Between phases 1 and 2 the owner asked for **dark mode only**, reversing the lig
 against the new ground rather than flipped by eye; `CLAUDE.md` §7 records both the
 reversal and the colourblind sweep behind it. Shipped as **v1.1**.
 
-**Katakana is the natural next addition: a data module plus one registry entry.**
+**Katakana landed in v2.0 as a data module plus one registry entry, exactly as this
+line predicted.** Kanji is what remains, and it is the one that needs the `flow` layout
+branch.
 
 ## Post-1.7 — the pronunciation chart ✅
 
@@ -100,6 +103,59 @@ Four decisions were taken with the owner before any code, and are folded into
 | **Quiz**   | Four-option multiple choice in both directions. Typing kana needs an IME, so typed answers cannot be symmetric.                                                          | §6    |
 | **Deck**   | Starts empty. The empty state is a primary screen because a refresh always returns to it.                                                                                | §5    |
 | **Design** | Its own paper-and-ink palette, same token discipline as the sibling app.                                                                                                 | §7    |
+
+## Post-1.9 — katakana ✅
+
+Owner-requested. **The claim the character-set model has been making since Phase 2, cashed.**
+
+Three decisions were taken with the owner before any code:
+
+|            | Decision                                                                                                  |
+| ---------- | --------------------------------------------------------------------------------------------------------- |
+| **Picker** | One chart at a time, behind a picker — 142 cells stacked is twice the scroll at 375px, and worse per set. |
+| **Deck**   | One deck spanning both scripts, so あ and ア can be drilled against each other.                           |
+| **Scope**  | All 71, mirroring the other chart. A katakana chart stopping short of ガ would be the odd one out.        |
+
+**What it cost, honestly** — the long version is `CLAUDE.md` §3.5.
+
+- [x] `src/characters/katakana.ts` — 71 characters in the same sixteen rows, the same
+      gaps, the same three homophone pairs, and 72 loanword examples
+- [x] **One registry entry.** No type changed. `quiz.ts`, `shuffle.ts`, the deck
+      reducer, `CharacterGrid`, `GridLayout`, `GridCell`, `SoundCell`, `Flashcard` and
+      `QuizCard` were **not touched at all**
+- [x] **The quiz absorbed 71 new homophone pairs with no edit.** `collides` was keyed on
+      romaji rather than on the お/を pair back in Phase 6; あ/ア and every other twin
+      fell out of that for free. New tests pin it in both directions, including a deck
+      holding nothing but one pair
+- [x] `SetPicker` — takes the registry, reports an id, `aria-pressed` like a grid cell,
+      and **renders nothing when only one set is registered**, so no page counts the
+      registry itself
+- [x] `useCharacterSet` — per-page, NOT a second context. §2 allows one and the deck has
+      it; the deck is what is worth carrying between screens, and it does
+- [x] `DeckSummary` re-thought for a deck that outgrew the chart above it: counts within
+      the visible chart, states the rest separately, and scopes `Select all` / `Clear
+all` to what you can see. Wiping everything is a separate, named control
+- [x] The writing prompt **names the script** — "a" cannot be answered when あ and ア are
+      both "a". From `character.script` through the registry, never hardcoded
+- [x] **A latent defect the second script exposed:** `SpeakButton` built its
+      `aria-label` from the glyph, which on the writing screen put the answer in the DOM
+      before the reveal — precisely what §1 forbids. axe could not have caught it: the
+      button was correctly labelled, it was just labelled with the answer. It takes a
+      `label` override now, and a test asserts no glyph reaches that name
+- [x] **The font needed nothing.** The Phase 1 subset already covered U+3040–30FF on the
+      grounds that katakana was coming. Verified by re-subsetting the shipped file:
+      カ, ヅ, ー and ヲ each yield a real outline (852–1020 bytes) while 漢 collapses to
+      the 620-byte empty baseline
+- [x] **Verified in a real browser**: zero horizontal overflow on all six routes at both
+      375px and **320px** with the second chart showing, 71 cells at a 64.5px hit
+      target, no console output
+- [x] Re-audited: **0 axe violations across fifteen route/state combinations** — three
+      new ones covering the second chart on both pickers and a deck spanning both
+      scripts — Lighthouse mobile 96–97 / 100 / 100 / 100, no failed audits
+- [x] `feat: katakana`
+
+**Deployed as 2.0.** 173 tests across 21 files. Bundle 97.25 KB gzip, up from 93.85 —
+the second set is data, and nothing renders more than one chart at a time.
 
 ---
 
