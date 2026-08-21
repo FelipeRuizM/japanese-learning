@@ -111,6 +111,67 @@ describe('flashcards', () => {
     expect(card()).toBeInTheDocument()
   })
 
+  /**
+   * THE ANSWER MUST NEVER BE VISIBLE BEFORE IT IS EARNED, INCLUDING IN MOTION.
+   *
+   * Advancing from a revealed card used to leave the flip on the same DOM node,
+   * so the browser animated rotateY(180deg) → 0deg — and past the halfway point
+   * of that 300ms rotation the face toward the viewer was the back of the card
+   * now holding the NEXT character. The next reading was readable in the wobble.
+   *
+   * jsdom runs no transitions, so this asserts the MECHANISM that makes one
+   * impossible: the card that arrives is a different element, already at 0deg.
+   * A CSS transition needs a previous value on the same node to interpolate
+   * from, and a freshly mounted node has none.
+   */
+  it('mounts a new card rather than un-flipping the old one', async () => {
+    const user = userEvent.setup()
+    renderCards()
+    await user.click(screen.getByRole('button', { name: 'K row, select all' }))
+
+    await user.click(card())
+    const revealedNode = flippedCard()
+    expect(revealedNode.style.transform).toBe('rotateY(180deg)')
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+
+    const nextNode = card()
+    expect(nextNode.style.transform).toBe('rotateY(0deg)')
+    // The assertion that matters: nothing to animate FROM.
+    expect(nextNode).not.toBe(revealedNode)
+    expect(revealedNode).not.toBeInTheDocument()
+  })
+
+  /** The same, going backwards — Previous is no safer than Next. */
+  it('mounts a new card when stepping backwards too', async () => {
+    const user = userEvent.setup()
+    renderCards()
+    await user.click(screen.getByRole('button', { name: 'K row, select all' }))
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(card())
+    const revealedNode = flippedCard()
+
+    await user.click(screen.getByRole('button', { name: 'Previous' }))
+    expect(card()).not.toBe(revealedNode)
+    expect(card().style.transform).toBe('rotateY(0deg)')
+  })
+
+  /**
+   * The flip itself must still animate: it is functional motion, showing that
+   * the two faces are one thing. Same card, same node, transform changes.
+   */
+  it('keeps the real flip on one node, so it still animates', async () => {
+    const user = userEvent.setup()
+    renderCards()
+    await user.click(screen.getByRole('button', { name: 'K row, select all' }))
+
+    const front = card()
+    await user.click(front)
+    expect(flippedCard()).toBe(front)
+    expect(front.style.transform).toBe('rotateY(180deg)')
+  })
+
   it('flips back to the front', async () => {
     const user = userEvent.setup()
     renderCards()

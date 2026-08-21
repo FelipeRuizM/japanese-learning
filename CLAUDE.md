@@ -479,6 +479,26 @@ drill a two-script app exists to offer. The consequence is that a summary sittin
   > The example words and the replay control sit **below** the card rather than on its
   > back face: a button cannot contain another button, and replay has to be a real one.
 
+- **A new card is a new element, not the old one rotating back.** The card is keyed on
+  the character, inside `Flashcard` itself.
+
+  > **This was a real defect, found in use and fixed in v2.1.** Advancing from a
+  > revealed card changes the character and clears `revealed` in one render. On a single
+  > DOM node the browser then animates `rotateY(180deg) → 0deg`, and for the half of
+  > that 300ms rotation past the midpoint, the face toward the viewer is the **back of
+  > the card now holding the next character**. The next answer was legible in the
+  > wobble. Measured before the fix: **19 of 26 sampled frames mid-rotation**; after:
+  > **0 of 26**.
+  >
+  > A transition needs a previous value **on the same node** to interpolate from, so
+  > mounting a fresh element removes the animation rather than hiding it. Flipping the
+  > same card keeps its key, so a real flip still animates — that is functional motion
+  > and must survive the fix. A test asserts all three: new node on advance, new node on
+  > **Previous**, same node on a flip.
+  >
+  > The key lives in `Flashcard`, not at the call site: it is an invariant of the flip,
+  > and a caller cannot be relied on to remember a key that looks decorative.
+
 - `prefers-reduced-motion` collapses the flip to an instant swap.
 
 ### Quiz — see §6.
@@ -717,3 +737,7 @@ state, dying when the route unmounts.
    above one chart has to count within it (§5).
 10. An `aria-label` is DOM. On the writing screen, naming the glyph in one hands over the
     answer — which is why `SpeakButton` takes a `label` override.
+11. **A CSS transition can leak an answer even when every rendered state is correct.**
+    Changing content and reversing a transform on the same node animates the NEW content
+    through the old transform. Remount instead of un-flipping (§5). jsdom runs no
+    transitions, so only a browser — or a test pinning node identity — catches this.

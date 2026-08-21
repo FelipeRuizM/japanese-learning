@@ -157,6 +157,28 @@ all` to what you can see. Wiping everything is a separate, named control
 **Deployed as 2.0.** 173 tests across 21 files. Bundle 97.25 KB gzip, up from 93.85 —
 the second set is data, and nothing renders more than one chart at a time.
 
+## Post-2.0 — the flashcard leaked the next answer ✅
+
+Reported in use, not by a test.
+
+- [x] **The bug.** Advancing from a revealed card animated `rotateY(180deg) → 0deg` on
+      the same DOM node. The character had already changed, so the face rotating past
+      the viewer was the back of the NEXT card — its glyph and its reading, briefly
+      readable. Every rendered state was correct; the leak was entirely in the motion
+      between them
+- [x] **The fix.** The card is keyed on the character inside `Flashcard`, so advancing
+      mounts a fresh element already at 0deg. A transition needs a previous value on the
+      same node to interpolate from; a new node has none. Flipping the same card keeps
+      its key, so functional motion survives
+- [x] **Measured in a browser, before and after**: sampling the computed transform every
+      frame for 400ms after pressing Next gave **19 of 26 frames mid-rotation** before
+      and **0 of 26** after
+- [x] Three tests, and **the two regression tests were confirmed to fail without the
+      fix** — node identity on Next, on Previous, and unchanged identity on a real flip
+- [x] `fix: never show the next card's answer`
+
+**Deployed as 2.1.**
+
 ---
 
 ## Phase 0 — The two documents ✅

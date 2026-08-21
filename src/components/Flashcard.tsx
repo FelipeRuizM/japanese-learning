@@ -19,6 +19,26 @@ import { Glyph, Label } from './ui/primitives'
  *     that names the reading only once it has been revealed. Otherwise a screen
  *     reader would read the answer straight off the back face and there would
  *     be nothing left to practise.
+ *
+ * THE `key` ON THE CARD IS LOAD-BEARING, AND IT IS NOT A LIST KEY.
+ *
+ * Advancing from a REVEALED card changes two things in one render: the
+ * character, and `revealed` back to false. Without the key those land on the
+ * same DOM node, so the browser dutifully animates `rotateY(180deg) → 0deg` —
+ * and for the 300ms that rotation is past the halfway point, the face turned
+ * toward the viewer is the BACK of the card now holding the NEXT character.
+ * The next answer was legible in the wobble, which is the one thing this screen
+ * must never show.
+ *
+ * Keying on the character mounts a NEW element instead, already at 0deg. A
+ * transition needs a previous value on the same node to interpolate from, and a
+ * freshly mounted node has none — so there is nothing to animate and nothing to
+ * glimpse. Flipping the SAME card keeps the same key, so a real flip still
+ * animates.
+ *
+ * It lives here rather than at the call site because it is an invariant of the
+ * flip, not a detail of who renders it: a caller cannot be relied on to
+ * remember a key that looks decorative and is not.
  */
 export function Flashcard({
   character,
@@ -37,6 +57,7 @@ export function Flashcard({
     <div className="flex flex-col gap-4">
       <div style={{ perspective: '1200px' }}>
         <button
+          key={character.id}
           type="button"
           onClick={onFlip}
           aria-expanded={revealed}
