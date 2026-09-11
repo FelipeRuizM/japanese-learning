@@ -69,3 +69,22 @@ export type VocabSet = {
   source: string
   groups: VocabGroup[]
 }
+
+/**
+ * An item together with the group it came from.
+ *
+ * Groups exist to shape the screen, but two other things need them: a card
+ * naming its category on the reveal, and the quiz drawing its first-choice
+ * distractors from the same group. Neither wants to walk `groups` itself, and
+ * an item does not carry a back-reference — that would denormalise data the
+ * group already owns, and leave two places to get it wrong.
+ *
+ * `groupId` is SET-QUALIFIED (`jpst100-w1-nouns/things`) for the same reason a
+ * character id is script-qualified: two weeks may both have a group called
+ * "things", and the quiz must not treat them as the same one.
+ */
+export type VocabEntry = {
+  item: VocabItem
+  groupId: string
+  groupLabel: string
+}

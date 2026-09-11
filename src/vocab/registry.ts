@@ -1,5 +1,5 @@
 import type { Speakable } from '../lib/pronunciation'
-import type { VocabItem, VocabSet } from '../types/vocab'
+import type { VocabEntry, VocabItem, VocabSet } from '../types/vocab'
 import { WEEK1_GREETINGS } from './week1Greetings'
 import { WEEK1_INTRODUCTION } from './week1Introduction'
 import { WEEK1_NOUNS } from './week1Nouns'
@@ -32,6 +32,28 @@ export function vocabSetById(id: string): VocabSet | undefined {
  */
 export function allVocab(set: VocabSet): VocabItem[] {
   return set.groups.flatMap((group) => group.items)
+}
+
+/**
+ * Every item in a set, each tagged with the group it came from.
+ *
+ * `allVocab` is the right call when only the words matter; this one is for the
+ * two places that also need the group — the card's reveal and the quiz's
+ * first distractor tier.
+ */
+export function vocabEntries(set: VocabSet): VocabEntry[] {
+  return set.groups.flatMap((group) =>
+    group.items.map((item) => ({
+      item,
+      groupId: `${set.id}/${group.id}`,
+      groupLabel: group.label,
+    })),
+  )
+}
+
+/** Every tagged entry across every registered set. */
+export function everyVocabEntry(): VocabEntry[] {
+  return VOCAB_SETS.flatMap(vocabEntries)
 }
 
 /** Every item across every registered set. */

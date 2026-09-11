@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from 'react'
 import type { Character, ScriptId } from '../types/characters'
+import type { VocabEntry } from '../types/vocab'
 import { CharacterGrid } from '../components/CharacterGrid'
 import { PronunciationNote, SpeakButton } from '../components/SpeakButton'
 import { QuizCard } from '../components/QuizCard'
 import { Flashcard } from '../components/Flashcard'
 import { VocabCard } from '../components/VocabCard'
+import { VocabQuizCard } from '../components/VocabQuizCard'
 import { EmptyDeck } from '../components/EmptyDeck'
 import { buildQuestion } from '../lib/quiz'
 import {
@@ -18,7 +20,9 @@ import { GridCell, GridGap } from '../components/GridCell'
 import { SoundCell } from '../components/SoundCell'
 import { SetPicker } from '../components/SetPicker'
 import { FLOW_FIXTURE } from '../characters/flowFixture'
-import { VOCAB_SETS, allVocab } from '../vocab/registry'
+import { VOCAB_SETS, everyVocabEntry, vocabEntries } from '../vocab/registry'
+import { buildVocabQuestion } from '../lib/vocabQuiz'
+import { systemRng } from '../lib/shuffle'
 import {
   Button,
   ButtonLink,
@@ -86,7 +90,7 @@ function VocabCardDemo() {
   const set = VOCAB_SETS[0]
   const { status, speak } = usePronunciation()
   const [revealed, setRevealed] = useState(false)
-  const item = set ? allVocab(set)[0] : undefined
+  const item = set ? vocabEntries(set)[0]?.item : undefined
   if (!item) return null
 
   return (
@@ -107,6 +111,40 @@ function VocabCardDemo() {
         remount-on-advance rule as the character flashcard.
       </p>
     </div>
+  )
+}
+
+/**
+ * A vocabulary question, answered, so the marked options and the reveal are
+ * reviewable. The English options are the reason this is not `QuizCard`: four
+ * of them are four sentences, which is a different layout problem from four
+ * glyphs.
+ */
+function VocabQuizCardDemo() {
+  const [chosen, setChosen] = useState<VocabEntry | null>(null)
+  // Built ONCE. Generating it during render would re-roll the question on the
+  // click that answers it, and the option marked correct would not be the one
+  // that was correct a moment earlier.
+  const [question] = useState(() => {
+    const set = VOCAB_SETS[0]
+    const entries = set ? vocabEntries(set) : []
+    const answer = entries[0]
+    return answer
+      ? buildVocabQuestion(answer, entries, everyVocabEntry(), systemRng)
+      : null
+  })
+  if (!question) return null
+
+  return (
+    <VocabQuizCard
+      question={question}
+      chosen={chosen}
+      onChoose={setChosen}
+      onNext={() => {
+        setChosen(null)
+      }}
+      isLast={false}
+    />
   )
 }
 
@@ -305,6 +343,10 @@ export function Styleguide() {
 
       <Section title="Vocabulary card">
         <VocabCardDemo />
+      </Section>
+
+      <Section title="Vocabulary quiz card">
+        <VocabQuizCardDemo />
       </Section>
 
       <Section title="Quiz card">

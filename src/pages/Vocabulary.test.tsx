@@ -248,3 +248,195 @@ describe('Vocabulary flashcards', () => {
     expect(screen.getByText(`From ${firstSet().source}.`)).toBeInTheDocument()
   })
 })
+
+/* ------------------------------------------------------------------------- */
+
+const optionButtons = () =>
+  screen.getAllByRole('listitem').map((li) => {
+    const button = li.querySelector('button')
+    if (!button) throw new Error('an option rendered without a button')
+    return button
+  })
+
+/** Switch the page into quiz mode. */
+async function enterQuiz(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Quiz' }))
+}
+
+describe('Vocabulary quiz', () => {
+  it('offers the two modes, with cards showing first', () => {
+    show()
+    expect(screen.getByRole('group', { name: 'Practice mode' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cards' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByRole('button', { name: 'Quiz' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  it('asks one question per item in the chosen set', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: `Question 1 of ${allVocab(firstSet()).length}`,
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('always offers four options', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+
+    expect(optionButtons()).toHaveLength(4)
+  })
+
+  /** Four options that show the same thing twice is not a question (§11.2). */
+  it('never shows the same option value twice', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+
+    const total = allVocab(firstSet()).length
+    for (let i = 0; i < total; i++) {
+      const shown = optionButtons().map((b) => b.textContent)
+      expect(new Set(shown).size, `question ${i + 1}`).toBe(4)
+
+      const first = optionButtons()[0]
+      if (!first) throw new Error('no options')
+      await user.click(first)
+      await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
+    }
+  })
+
+  it('marks the right answer and says so in words, not only colour', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+
+    const first = optionButtons()[0]
+    if (!first) throw new Error('no options')
+    await user.click(first)
+
+    // A word, always — colour is never the only channel (CLAUDE.md §7).
+    expect(screen.getByText(/^(Correct|Not quite)$/)).toBeInTheDocument()
+
+    // Exactly one option is marked right, whether or not they picked it:
+    // someone who guessed wrong still needs the thing they came for.
+    const marked = optionButtons().filter((b) =>
+      b.className.includes('border-positive'),
+    )
+    expect(marked).toHaveLength(1)
+  })
+
+  it('locks the options once answered', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+
+    const first = optionButtons()[0]
+    if (!first) throw new Error('no options')
+    await user.click(first)
+
+    for (const button of optionButtons()) expect(button).toBeDisabled()
+  })
+
+  it('speaks the answer on answering, in kana', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+    speak.mockClear()
+
+    const first = optionButtons()[0]
+    if (!first) throw new Error('no options')
+    await user.click(first)
+
+    expect(speak).toHaveBeenCalledTimes(1)
+    const spoken = speak.mock.calls[0]?.[0] as { ja: string }
+    expect(allVocab(firstSet()).some((i) => i.kana === spoken.ja)).toBe(true)
+  })
+
+  it('counts the round and reports a score that matches the verdicts', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+
+    const total = allVocab(firstSet()).length
+    let correct = 0
+
+    for (let i = 0; i < total; i++) {
+      const first = optionButtons()[0]
+      if (!first) throw new Error('no options')
+      await user.click(first)
+      if (screen.queryByText('Correct') !== null) correct++
+      await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
+    }
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Round complete' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(`${correct} / ${total}`)).toBeInTheDocument()
+  })
+
+  it('starts a fresh round on Go again', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+
+    const total = allVocab(firstSet()).length
+    for (let i = 0; i < total; i++) {
+      const first = optionButtons()[0]
+      if (!first) throw new Error('no options')
+      await user.click(first)
+      await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
+    }
+
+    await user.click(screen.getByRole('button', { name: 'Go again' }))
+    expect(
+      screen.getByRole('heading', { level: 2, name: `Question 1 of ${total}` }),
+    ).toBeInTheDocument()
+  })
+
+  it('starts a new round when the set changes', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+    const second = VOCAB_SETS[1]
+    if (!second) throw new Error('this test needs a second set')
+
+    const first = optionButtons()[0]
+    if (!first) throw new Error('no options')
+    await user.click(first)
+    await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
+
+    await user.click(screen.getByRole('button', { name: second.label }))
+
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: `Question 1 of ${allVocab(second).length}`,
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('goes back to the cards, from the top', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+    await user.click(screen.getByRole('button', { name: 'Cards' }))
+
+    expect(
+      screen.getByRole('heading', {
+        level: 2,
+        name: `Card 1 of ${allVocab(firstSet()).length}`,
+      }),
+    ).toBeInTheDocument()
+  })
+})

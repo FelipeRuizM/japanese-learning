@@ -9,6 +9,10 @@ It is the durable spec. `PLAN.md` holds the phased build order.
 > writing practice), the **dakuten/handakuten rows**, and **katakana**. It teaches
 > **142 characters across two scripts**.
 >
+> **v2.4 completed the vocabulary half of the companion** — a quiz over a chosen set,
+> both directions, sharing the route with the cards (§11.5). Phases 11–12 are the two
+> drills that are not flashcard-shaped: the numbers generator and the grammar cloze.
+>
 > **v2.2 opened the second pillar (§11):** the vocabulary model, the registry, and
 > JPST 100 Week 1 as data — 42 items across three sets, with no UI. **v2.3 put a screen
 > on it** — `#/vocabulary`, flashcards over a chosen set (§11.4). Phases 10–12 in
@@ -421,7 +425,7 @@ breathe on desktop.
 #/quiz           Quiz        — recall over the deck
 #/pronunciation  Sounds      — the whole set; tap a character to hear it
 #/writing        Writing     — hear one at random, write it on paper, then check
-#/vocabulary     Vocabulary  — flip through a week's words from the course (§11)
+#/vocabulary     Vocabulary  — a week's words: cards, and a quiz over them (§11)
 #/styleguide     Styleguide  — every token and component in isolation
 ```
 
@@ -909,7 +913,42 @@ because someone remembered not to.
 - Each set **cites its class note on screen**, so a card that looks wrong can be checked
   rather than argued about.
 
-### 11.5 Adding a week
+### 11.5 The vocabulary quiz
+
+`src/lib/vocabQuiz.ts` — pure functions with an injected `rng`, no React, exactly as
+`quiz.ts` is. **A separate module, not a generalisation of it.** The two share a shape
+— four options, a direction per question, distractors tiered by confusability — and
+nothing else: the character quiz tiers on `rowId` and `vowel`, this one tiers on the
+group a word was taught in. One module serving both would take the tiering, the
+collision rule and the display rule as parameters, at which point the shared thing is a
+parameter list with a shuffle in it.
+
+- **Two directions, 50/50:** `kana-to-english` and `english-to-kana`.
+- **Distractors: same `VocabGroup` → rest of the set → rest of the registry.** The
+  groups are the class note's own, and they are exactly the confusions: "Leaving &
+  returning home" holds いってきます, いってらっしゃい, ただいま and おかえりなさい,
+  two of which differ by who is speaking rather than by meaning.
+- **The last tier is not a nicety.** "Meals" has two items, so a question about
+  いただきます cannot be filled from its own group; a set of one still has to produce
+  four distinct options.
+- **The collision rule is keyed on the displayed values — English and kana — never on
+  the named pairs** (§11.2). Romaji is not checked because it is never an option's
+  displayed value; it appears only in the reveal, beside the kana it transcribes.
+- **`VocabEntry` exists because an item does not know its group.** `{ item, groupId,
+groupLabel }`, built by `vocabEntries(set)`. `groupId` is **set-qualified**
+  (`jpst100-w1-nouns/things`) for the same reason a character id is script-qualified:
+  two weeks may both have a group called "things" and the quiz must not treat them as
+  one.
+
+**Cards and quiz are one route with a mode, not two routes.** The kana half gives each
+activity its own nav entry; copying that here would put a second "Quiz" in the nav —
+seven entries, two of them ambiguous — and would throw away the chosen set on the way
+between them, since which set you are reading is per-page state exactly as which chart
+you are reading is. Studying a set and testing yourself on it is one sitting, so it is
+one screen. The mode toggle is `SetPicker` again: two "sets" of one field each, with the
+toggle semantics already right.
+
+### 11.6 Adding a week
 
 1. Read the week's folder in the vault.
 2. One `VocabSet` per class note, ids `jpst100:w<n>:<romaji>`.

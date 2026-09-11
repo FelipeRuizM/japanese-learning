@@ -8,10 +8,10 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-09-11
 
-**Phases 1–9 complete.** The kana curriculum (1–7) is finished. The course companion
-(CLAUDE.md §11) has its model and its first screen; phases 10–12 build the vocabulary
-quiz, the numbers generator and the grammar cloze. All of it is listed at the bottom of
-this file.
+**Phases 1–10 complete.** The kana curriculum (1–7) is finished, and so is the
+vocabulary half of the course companion (8–10): the model, the cards and the quiz.
+Phases 11–12 are the two drills that are not flashcard-shaped — the numbers generator
+and the grammar cloze. All of it is listed at the bottom of this file.
 
 ### Where phases 1–7 left it
 
@@ -550,16 +550,32 @@ that everything after it is a consumer.
 > source. If it is wanted, it belongs in the quiz, where a round already spans a chosen
 > scope.
 
-## Phase 10 — Vocabulary quiz
+## Phase 10 — Vocabulary quiz ✅
 
-- [ ] Two directions, 50/50: **kana → English** and **English → kana**
-- [ ] Distractors from the same `VocabGroup` first, then the set, then the registry —
-      the same tiering logic as §6, on a different key
-- [ ] **The shared-meaning exclusion** — おはよう and おはようございます can never be
-      options in one question. Key it on the displayed value, not on a named pair, so
-      a later week's collision is handled before it is typed in
-- [ ] A group smaller than four still yields four distinct options
-- [ ] `feat: the vocabulary quiz`
+- [x] `src/lib/vocabQuiz.ts` — pure, injected `rng`, no React
+- [x] Two directions, 50/50: **kana → English** and **English → kana**
+- [x] Distractors: same `VocabGroup` → rest of the set → rest of the registry
+- [x] **The shared-meaning exclusion**, keyed on the displayed values rather than on the
+      named pairs, so a later week's collision is handled before it is typed in
+- [x] A group of two, a set of two and a set of **one** all still yield four distinct
+      options
+- [x] `VocabEntry` — an item with the group it came from, `groupId` set-qualified
+- [x] `VocabQuizCard`, and cards + quiz sharing `#/vocabulary` behind a mode toggle
+- [x] `VocabQuizCard` in the styleguide
+- [x] `feat: the vocabulary quiz`
+
+**Deployed as 2.4.**
+
+> **The distractor tiers are where the two quizzes stop resembling each other.** The
+> character quiz asks "same row, then same vowel" because さ/ち and ぬ/め are shape
+> confusions. This one asks "same group", because the class note already grouped the
+> words by the situation they are used in — and "Leaving & returning home" holds four
+> phrases, two of which differ only by **who is speaking**. That is the discrimination
+> worth drilling, and it came free from data that was already shaped correctly.
+
+> **Both invariants were mutation-checked rather than assumed.** Dropping the English
+> half of the collision rule fails six tests; flattening the group tier fails one. A
+> guard that has never been seen to fail is not yet known to be a guard.
 
 ## Phase 11 — The numbers drill
 
