@@ -9,6 +9,9 @@ It is the durable spec. `PLAN.md` holds the phased build order.
 > writing practice), the **dakuten/handakuten rows**, and **katakana**. It teaches
 > **142 characters across two scripts**.
 >
+> **v2.6 completed the plan.** The grammar cloze (§11.7) is the last of the twelve
+> phases: every part of JPST 100 Week 1 is now drillable, in the shape that fits it.
+>
 > **v2.5 added the numbers drill** (§11.6) — a generator, not a deck, and the first
 > screen in the app whose prompt is not Japanese. It also extracted the verdict line and
 > the option states that all three quizzes had been duplicating.
@@ -431,6 +434,7 @@ breathe on desktop.
 #/writing        Writing     — hear one at random, write it on paper, then check
 #/vocabulary     Vocabulary  — a week's words: cards, and a quiz over them (§11)
 #/numbers        Numbers     — 1–100, ages and school years, generated (§11.6)
+#/grammar        Grammar     — fill the gap: です and の (§11.7)
 #/styleguide     Styleguide  — every token and component in isolation
 ```
 
@@ -985,7 +989,35 @@ enumerate, which is what makes this not a deck.
 > correct readings are pinned, against a written-out table rather than against the same
 > rule the code uses.
 
-### 11.7 Adding a week
+### 11.7 The grammar cloze — `#/grammar`
+
+`src/lib/cloze.ts`, pure with an injected `rng`. Authored data, not a generator: a
+pattern is a sentence somebody wrote down with one piece taken out. The sentences live
+in `src/grammar/`, built from Week 1 vocabulary and nothing else, so the drill never
+asks a grammar question that is secretly a vocabulary question.
+
+- **The blank is always the particle or the copula, never the noun.** A cloze over the
+  noun is a vocabulary question in disguise, and the vocabulary quiz asks it better.
+- **The English is part of the PROMPT, not the reveal.** Without it the question is
+  frequently unanswerable rather than merely hard: わたし＿がくせいです takes は for
+  "I am a student" and の for "it is my student", and both are real sentences.
+- **Options come from form GROUPS, one per group** — which is what guarantees four
+  distinct, individually defensible options with no retry loop.
+- **Only the four particles Week 1 teaches** (は, の, を, か). が, に, で and も are
+  excluded deliberately: a distractor the class has not taught tests whether you
+  recognise an unknown, not whether you know は from の.
+
+> **"Never offer together" and "equally correct" are two different facts, and Week 1
+> contains one of each.** じゃないです and ではありません are interchangeable — either
+> answers "I am not a teacher", so offering both would make the question unanswerable,
+> and the reveal says the other would have been fine. です and だ also fill the same
+> slot, so they must not be offered together either — but だ is the plain form and every
+> sentence in this drill is polite, so calling it "equally correct" would be **wrong**.
+> `FormGroup` carries `interchangeable` for exactly this. Collapsing the two notions
+> into one list gets one of the two pairs wrong whichever way it collapses, and a test
+> pins each direction.
+
+### 11.8 Adding a week
 
 1. Read the week's folder in the vault.
 2. One `VocabSet` per class note, ids `jpst100:w<n>:<romaji>`.

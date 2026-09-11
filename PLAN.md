@@ -8,10 +8,13 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-09-11
 
-**Phases 1–11 complete.** The kana curriculum (1–7) is finished; the course companion
-has the vocabulary model, cards and quiz (8–10) and the numbers drill (11). Phase 12,
-the grammar cloze, is the last one planned. All of it is listed at the bottom of this
-file.
+**All twelve phases complete.** The kana curriculum (1–7) teaches 142 characters across
+two scripts. The course companion (8–12) drills JPST 100 Week 1 in four shapes: cards,
+a vocabulary quiz, a numbers generator and a grammar cloze.
+
+**It has still never been deployed.** The repository has no GitHub remote, so the
+Actions workflow has never run — that remains the one thing between this and a live
+site, and it is now the most valuable thing left to do.
 
 ### Where phases 1–7 left it
 
@@ -622,14 +625,47 @@ Not flashcards. A **generator**, because 1–100 is a rule (CLAUDE.md §11.3, §
 > option renderer, the reveal and the labelling as parameters — a parameter list wearing
 > a component's clothes. Same split `GridLayout` makes.
 
-## Phase 12 — The grammar cloze
+## Phase 12 — The grammar cloze ✅
 
-- [ ] `src/lib/cloze.ts` — pure, injected `rng`
-- [ ] です patterns: present/past × affirmative/negative, and the か question
-- [ ] の patterns: possession, origin/category, chaining, standing in for a noun
-- [ ] Sentences built from Week 1 vocabulary, so the drill never needs an unknown word
-- [ ] The blank is the **particle or the copula**, never the noun
-- [ ] `feat: the grammar cloze`
+- [x] `src/lib/cloze.ts` — pure, injected `rng`
+- [x] `src/grammar/` — the data layer, with the same registry rule the other two follow
+- [x] です patterns: present/past × affirmative/negative, and the か question
+- [x] の patterns: possession, origin/category, chaining, standing in for a noun
+- [x] Sentences built from Week 1 vocabulary only — 17 patterns
+- [x] The blank is the **particle or the copula**, never the noun, and a test says so
+- [x] The English shown with the QUESTION, because without it half of them have two
+      defensible answers
+- [x] `#/grammar`, `ClozeCard`, and the card in the styleguide
+- [x] `feat: the grammar cloze`
+
+**Deployed as 2.6.**
+
+> **The distinction this phase turned on: "never offer together" is not "equally
+> correct".** じゃないです and ではありません are interchangeable — either answers the
+> question, so they must never both be options, and the reveal says the other would have
+> been fine. です and だ also fill the same slot and also must not appear together — but
+> だ is the plain form and every sentence here is polite, so telling a learner it is
+> equally correct would be **wrong**. One list cannot express both; `FormGroup` carries
+> an `interchangeable` flag, and a mutation test pins each direction — conflating them
+> fails one test whichever way it is conflated.
+
+> **The same sentence appears twice with the blank moved.** わたしのなまえはフェリペです
+> is asked once for the の and once for the は. That is what a cloze is for: the sentence
+> is the same, the thing being taught is not.
+
+---
+
+## What is left
+
+- **Deploy it.** No remote, so no workflow run, so no site (§2). Everything else on this
+  list is smaller than this one.
+- **The nav carries eight flat destinations across two pillars** and wants grouping
+  rather than a ninth entry. The wrap still holds at 375px, but "Quiz" and "Grammar"
+  sitting in one row with no indication that one is kana and one is the course is the
+  kind of thing that reads fine to whoever built it.
+- **Week 2**, whenever the vault has it — a data module and a registry entry per §11.8.
+- **Kanji**, which the course teaches and which needs the `layout: 'flow'` branch the
+  grid has carried unused since Phase 2 (§3.2).
 
 ---
 

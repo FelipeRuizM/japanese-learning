@@ -8,6 +8,7 @@ import { Flashcard } from '../components/Flashcard'
 import { VocabCard } from '../components/VocabCard'
 import { VocabQuizCard } from '../components/VocabQuizCard'
 import { NumberCard } from '../components/NumberCard'
+import { ClozeCard } from '../components/ClozeCard'
 import { EmptyDeck } from '../components/EmptyDeck'
 import { buildQuestion } from '../lib/quiz'
 import {
@@ -24,6 +25,8 @@ import { FLOW_FIXTURE } from '../characters/flowFixture'
 import { VOCAB_SETS, everyVocabEntry, vocabEntries } from '../vocab/registry'
 import { buildVocabQuestion } from '../lib/vocabQuiz'
 import { buildNumberQuestion, promptFor } from '../lib/numbers'
+import { buildClozeQuestion } from '../lib/cloze'
+import { CLOZE_ITEMS } from '../grammar/registry'
 import { systemRng } from '../lib/shuffle'
 import {
   Button,
@@ -178,6 +181,39 @@ function NumberCardDemo() {
         Pinned to 20 years old, because はたち is the one age that drops さい entirely —
         and にじゅうさい, the form a learner writes before they know that, is one of the
         distractors.
+      </p>
+    </div>
+  )
+}
+
+/**
+ * A cloze question. Worth seeing unanswered and answered: the gap is a dashed
+ * rule before, and the correct form in accent ink after.
+ */
+function ClozeCardDemo() {
+  const [chosen, setChosen] = useState<string | null>(null)
+  // Built once, like the other two — see VocabQuizCardDemo.
+  const [question] = useState(() => {
+    const item = CLOZE_ITEMS.find((c) => c.kind === 'copula') ?? CLOZE_ITEMS[0]
+    return item ? buildClozeQuestion(item, systemRng) : null
+  })
+  if (!question) return null
+
+  return (
+    <div className="flex flex-col gap-3">
+      <ClozeCard
+        question={question}
+        chosen={chosen}
+        onChoose={setChosen}
+        onNext={() => {
+          setChosen(null)
+        }}
+        isLast={false}
+      />
+      <p className="m-0 max-w-prose text-sm text-ink-2">
+        The meaning sits with the QUESTION, not the reveal: without it,
+        わたし＿がくせいです takes は for &ldquo;I am a student&rdquo; and の for
+        &ldquo;it is my student&rdquo;, and both are real sentences.
       </p>
     </div>
   )
@@ -386,6 +422,10 @@ export function Styleguide() {
 
       <Section title="Numbers card">
         <NumberCardDemo />
+      </Section>
+
+      <Section title="Cloze card">
+        <ClozeCardDemo />
       </Section>
 
       <Section title="Quiz card">
