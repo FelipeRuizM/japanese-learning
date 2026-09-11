@@ -7,6 +7,7 @@ import { QuizCard } from '../components/QuizCard'
 import { Flashcard } from '../components/Flashcard'
 import { VocabCard } from '../components/VocabCard'
 import { VocabQuizCard } from '../components/VocabQuizCard'
+import { NumberCard } from '../components/NumberCard'
 import { EmptyDeck } from '../components/EmptyDeck'
 import { buildQuestion } from '../lib/quiz'
 import {
@@ -22,6 +23,7 @@ import { SetPicker } from '../components/SetPicker'
 import { FLOW_FIXTURE } from '../characters/flowFixture'
 import { VOCAB_SETS, everyVocabEntry, vocabEntries } from '../vocab/registry'
 import { buildVocabQuestion } from '../lib/vocabQuiz'
+import { buildNumberQuestion, promptFor } from '../lib/numbers'
 import { systemRng } from '../lib/shuffle'
 import {
   Button,
@@ -145,6 +147,39 @@ function VocabQuizCardDemo() {
       }}
       isLast={false}
     />
+  )
+}
+
+/**
+ * A numbers question. The prompt is the only one in the app that is not
+ * Japanese — a numeral, with kana in the options — so it is worth seeing beside
+ * the other two.
+ */
+function NumberCardDemo() {
+  const [chosen, setChosen] = useState<string | null>(null)
+  // Built once: generating during render would re-roll the question on the
+  // click that answers it (see VocabQuizCardDemo).
+  const [question] = useState(() =>
+    buildNumberQuestion(promptFor('age', 20), systemRng),
+  )
+
+  return (
+    <div className="flex flex-col gap-3">
+      <NumberCard
+        question={question}
+        chosen={chosen}
+        onChoose={setChosen}
+        onNext={() => {
+          setChosen(null)
+        }}
+        isLast={false}
+      />
+      <p className="m-0 max-w-prose text-sm text-ink-2">
+        Pinned to 20 years old, because はたち is the one age that drops さい entirely —
+        and にじゅうさい, the form a learner writes before they know that, is one of the
+        distractors.
+      </p>
+    </div>
   )
 }
 
@@ -347,6 +382,10 @@ export function Styleguide() {
 
       <Section title="Vocabulary quiz card">
         <VocabQuizCardDemo />
+      </Section>
+
+      <Section title="Numbers card">
+        <NumberCardDemo />
       </Section>
 
       <Section title="Quiz card">

@@ -2,6 +2,8 @@ import type { VocabEntry } from '../types/vocab'
 import type { VocabQuizQuestion } from '../lib/vocabQuiz'
 import { vocabDisplayValue } from '../lib/vocabQuiz'
 import { Button, Glyph, Label } from './ui/primitives'
+import { Verdict } from './ChoiceFeedback'
+import { optionButtonClasses } from './optionStyles'
 
 /**
  * One vocabulary question: a prompt, four options, and — once answered — the
@@ -65,7 +67,7 @@ export function VocabQuizCard({
                 className={[
                   'flex min-h-20 w-full cursor-pointer items-center justify-center',
                   'rounded-md border px-3 py-3 text-center transition-colors',
-                  optionClasses({ answered, isAnswer, isChosen }),
+                  optionButtonClasses({ answered, isAnswer, isChosen }),
                 ].join(' ')}
               >
                 {promptIsKana ? (
@@ -86,17 +88,7 @@ export function VocabQuizCard({
           {/* aria-live so the verdict reaches a screen reader without moving
               focus away from where the learner is. */}
           <div aria-live="polite" className="flex flex-col gap-3">
-            <p
-              className={[
-                'm-0 flex items-center gap-2 border-l-2 pl-3 font-sans font-medium',
-                correct
-                  ? 'border-positive text-positive'
-                  : 'border-negative text-negative',
-              ].join(' ')}
-            >
-              {correct ? <CheckMark /> : <CrossMark />}
-              {correct ? 'Correct' : 'Not quite'}
-            </p>
+            <Verdict correct={correct} />
 
             {/* The answer is always restated, even when they got it right —
                 reading it back is what makes the pairing stick. */}
@@ -129,31 +121,6 @@ export function VocabQuizCard({
 }
 
 /**
- * After answering, both the right answer and a wrong choice are marked. Showing
- * only what they picked leaves someone who guessed wrong without the thing they
- * came for.
- */
-function optionClasses({
-  answered,
-  isAnswer,
-  isChosen,
-}: {
-  answered: boolean
-  isAnswer: boolean
-  isChosen: boolean
-}): string {
-  if (!answered) {
-    return 'border-rule bg-transparent text-ink-0 hover:border-accent hover:bg-accent-soft'
-  }
-  if (isAnswer) {
-    // Semantic colour is text and a rule, never a fill (CLAUDE.md §7).
-    return 'border-positive bg-transparent text-positive'
-  }
-  if (isChosen) return 'border-negative bg-transparent text-negative'
-  return 'border-rule bg-transparent text-ink-3'
-}
-
-/**
  * Spoken names, so a kana option is never announced as a bare string of
  * syllables. In the other direction the English already reads as itself.
  */
@@ -162,46 +129,4 @@ function optionLabel(option: VocabEntry, question: VocabQuizQuestion): string {
   return question.direction === 'kana-to-english'
     ? shown
     : `${option.item.kana} ${option.item.romaji}`
-}
-
-/* Inline SVG — emoji as iconography is banned (CLAUDE.md §7). */
-function CheckMark() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        d="M3 8.5l3.5 3.5L13 4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function CrossMark() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path
-        d="M4 4l8 8M12 4l-8 8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
 }

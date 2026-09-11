@@ -8,10 +8,10 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-09-11
 
-**Phases 1–10 complete.** The kana curriculum (1–7) is finished, and so is the
-vocabulary half of the course companion (8–10): the model, the cards and the quiz.
-Phases 11–12 are the two drills that are not flashcard-shaped — the numbers generator
-and the grammar cloze. All of it is listed at the bottom of this file.
+**Phases 1–11 complete.** The kana curriculum (1–7) is finished; the course companion
+has the vocabulary model, cards and quiz (8–10) and the numbers drill (11). Phase 12,
+the grammar cloze, is the last one planned. All of it is listed at the bottom of this
+file.
 
 ### Where phases 1–7 left it
 
@@ -577,19 +577,50 @@ that everything after it is a consumer.
 > half of the collision rule fails six tests; flattening the group tier fails one. A
 > guard that has never been seen to fail is not yet known to be a guard.
 
-## Phase 11 — The numbers drill
+## Phase 11 — The numbers drill ✅
 
-Not flashcards. A **generator**, because 1–100 is a rule (CLAUDE.md §11.3).
+Not flashcards. A **generator**, because 1–100 is a rule (CLAUDE.md §11.3, §11.6).
 
-- [ ] `src/lib/numbers.ts` — pure, injected `rng`: a number in, its kana reading out
-- [ ] The rule: `[tens]じゅう[ones]`, dropping either half when zero
-- [ ] Counting readings — **よん** not し, **なな** not しち, **きゅう** not く
-- [ ] The irregulars as a data table: いっさい, はっさい, じゅっさい/じっさい, **はたち**,
-      and **よねんせい**
-- [ ] Three question types: a numeral → its reading, an age → its reading, a year in
-      school → its reading
-- [ ] Unit tests over the whole 1–100 range, not a sample
-- [ ] `feat: the numbers drill`
+- [x] `src/lib/numbers.ts` — pure, injected `rng`: a number in, its kana reading out
+- [x] The rule: `[tens]じゅう[ones]`, dropping either half when zero; ten is じゅう alone
+- [x] Counting readings — **よん** not し, **なな** not しち, **きゅう** not く, with the
+      discarded readings reused as distractors
+- [x] The age irregulars as **a sound change, not a table** — see below
+- [x] **よねんせい**, and school years 1–6
+- [x] Three question types, in fixed proportions so every round exercises all three
+- [x] Distractors are predicted mistakes: digit swap, discouraged reading, naive age form
+- [x] Unit tests over the whole 1–100 range, against a written-out table
+- [x] `#/numbers`, `NumberCard`, and the card in the styleguide
+- [x] `feat: the numbers drill`
+
+**Deployed as 2.5.**
+
+> **The class note's "a few combine irregularly" understates it, and the drill would
+> have taught the understatement.** The note lists 1, 8, 10 and 20. Three of those four
+> are not one-off forms — they are one sound change that propagates to every number
+> ending in いち, はち or じゅう. So 18 is じゅうはっさい and 30 is さんじゅっさい,
+> neither of which is in the note, and both of which a learner generalising from the
+> note alone gets wrong. Implemented as the sound change; a lookup table would have
+> needed thirty rows and still been wrong for the thirty-first. **20 is the real
+> one-off** — はたち drops さい entirely.
+>
+> This is the first place the vault note was _extended_ rather than transcribed, and the
+> distinction matters: §11.2 says never to "fix" what the note says, and nothing here
+> contradicts it. Every form the note gives is exactly as the note gives it.
+
+> **Two tests were wrong before the code was.** A sweep for the discouraged readings
+> asserted no counting reading contains く — but く is inside ろく and ひゃく, both
+> correct. And a UI test asserted every option is a valid reading, which failed on
+> ろくじゅうくさい: 69 with the discouraged く, which is a distractor doing its job.
+> Both were the test over-claiming, and both are now pinned precisely instead.
+
+> **The third quiz is where the duplication got extracted.** The verdict line, the
+> option states and the two SVG marks were identical in all three cards — tolerable at
+> two, not at three. They live in `ChoiceFeedback.tsx` and `optionStyles.ts` now. The
+> CARDS stayed separate: what they genuinely differ in is the options (four glyphs, four
+> English sentences, four kana readings), and a shared card would take the prompt, the
+> option renderer, the reveal and the labelling as parameters — a parameter list wearing
+> a component's clothes. Same split `GridLayout` makes.
 
 ## Phase 12 — The grammar cloze
 

@@ -24,6 +24,9 @@ const Writing = lazy(() =>
 const Vocabulary = lazy(() =>
   import('./pages/Vocabulary').then((m) => ({ default: m.Vocabulary })),
 )
+const Numbers = lazy(() =>
+  import('./pages/Numbers').then((m) => ({ default: m.Numbers })),
+)
 const Styleguide = lazy(() =>
   import('./pages/Styleguide').then((m) => ({ default: m.Styleguide })),
 )
@@ -44,6 +47,7 @@ const router = createHashRouter([
       { path: 'pronunciation', element: <Sounds /> },
       { path: 'writing', element: <Writing /> },
       { path: 'vocabulary', element: <Vocabulary /> },
+      { path: 'numbers', element: <Numbers /> },
       { path: 'styleguide', element: <Styleguide /> },
       { path: '*', element: <NotFound /> },
     ],

@@ -14,6 +14,7 @@ const ROUTES = [
   { to: '/pronunciation', label: 'Sounds', end: false },
   { to: '/writing', label: 'Writing', end: false },
   { to: '/vocabulary', label: 'Vocabulary', end: false },
+  { to: '/numbers', label: 'Numbers', end: false },
 ] as const
 
 function NavItem({ to, label, end }: { to: string; label: string; end: boolean }) {
@@ -53,7 +54,7 @@ export function AppLayout() {
             non-wrapping nav pushed EVERY page into horizontal scroll, not just
             the newest one. Wrapping keeps every destination visible; a
             scrolling nav would hide the last tabs behind a gesture nobody is
-            told about. There are six now, and the same wrap absorbed it.
+            told about. There are seven now, and the same wrap absorbed it.
           */}
           <nav aria-label="Primary" className="flex flex-wrap gap-x-5 gap-y-1">
             {ROUTES.map((route) => (

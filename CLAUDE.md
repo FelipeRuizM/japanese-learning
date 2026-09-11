@@ -9,6 +9,10 @@ It is the durable spec. `PLAN.md` holds the phased build order.
 > writing practice), the **dakuten/handakuten rows**, and **katakana**. It teaches
 > **142 characters across two scripts**.
 >
+> **v2.5 added the numbers drill** (§11.6) — a generator, not a deck, and the first
+> screen in the app whose prompt is not Japanese. It also extracted the verdict line and
+> the option states that all three quizzes had been duplicating.
+>
 > **v2.4 completed the vocabulary half of the companion** — a quiz over a chosen set,
 > both directions, sharing the route with the cards (§11.5). Phases 11–12 are the two
 > drills that are not flashcard-shaped: the numbers generator and the grammar cloze.
@@ -426,6 +430,7 @@ breathe on desktop.
 #/pronunciation  Sounds      — the whole set; tap a character to hear it
 #/writing        Writing     — hear one at random, write it on paper, then check
 #/vocabulary     Vocabulary  — a week's words: cards, and a quiz over them (§11)
+#/numbers        Numbers     — 1–100, ages and school years, generated (§11.6)
 #/styleguide     Styleguide  — every token and component in isolation
 ```
 
@@ -948,7 +953,39 @@ you are reading is. Studying a set and testing yourself on it is one sitting, so
 one screen. The mode toggle is `SetPicker` again: two "sets" of one field each, with the
 toggle semantics already right.
 
-### 11.6 Adding a week
+### 11.6 The numbers drill — `#/numbers`
+
+`src/lib/numbers.ts`, pure with an injected `rng`. **The rule is code and the exceptions
+are data**, and a round is a SAMPLE rather than an enumeration — there is no set to
+enumerate, which is what makes this not a deck.
+
+- **Counting:** `[tens]じゅう[ones]`, dropping either half when it is zero. Ten is じゅう
+  alone, never いちじゅう. 100 is ひゃく and joins no pattern.
+- **4, 7, 9 are よん / なな / きゅう**, never し / しち / く. The discarded readings are
+  used as **distractors**, so the choice is practised rather than merely asserted.
+- **Ages take one sound change that PROPAGATES.** A reading ending in いち, はち or じゅう
+  takes the small っ before さい. The class note lists 1, 8, 10 and 20; three of those are
+  this one rule, so **18 is じゅうはっさい and 30 is さんじゅっさい** — neither is in the
+  note, and a learner generalising from the note alone gets both wrong. Implemented as
+  the sound change, because a lookup table would need thirty rows and still be wrong for
+  the thirty-first. **20 is the genuine one-off: はたち, no さい at all.**
+- **School years run 1–6** — four at university, six at elementary school. One irregular,
+  and the note flags it: 4 is **よ**ねんせい.
+- **Distractors are predicted mistakes, not random numbers:** the digit swap (74 for 47),
+  the discouraged reading, the naive age form where an irregular is right (にじゅうさい
+  for はたち — the single most useful distractor in the drill), よんねんせい for
+  よねんせい, and only then neighbours.
+- **`ROUND_SHAPE` fixes the proportions** — five counting, four ages, three years, then
+  shuffled. A uniform draw would regularly deal a round with no ages in it, and the age
+  irregulars are the hardest part of the topic.
+
+> **The options are deliberately not all valid readings.** A test asserting they were
+> failed on ろくじゅうくさい — 69 with the discouraged く — which is the drill working,
+> not breaking. The UI test checks the options are kana; `numbers.test.ts` is where
+> correct readings are pinned, against a written-out table rather than against the same
+> rule the code uses.
+
+### 11.7 Adding a week
 
 1. Read the week's folder in the vault.
 2. One `VocabSet` per class note, ids `jpst100:w<n>:<romaji>`.
