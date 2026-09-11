@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Character } from '../types/characters'
 import {
   browserSpeechDeps,
   createSpeechProvider,
   resolveJapaneseVoice,
   type PronunciationProvider,
+  type Speakable,
 } from './pronunciation'
 
 /**
@@ -20,7 +20,7 @@ export type PronunciationStatus = 'checking' | 'ready' | 'unavailable'
 
 export type Pronunciation = {
   status: PronunciationStatus
-  speak: (character: Character) => void
+  speak: (subject: Speakable) => void
 }
 
 /**
@@ -63,10 +63,10 @@ export function usePronunciation(): Pronunciation {
     }
   }, [])
 
-  const speak = useCallback((character: Character) => {
+  const speak = useCallback((subject: Speakable) => {
     // Fire and forget. Nothing in the UI waits on audio finishing, and romaji
     // never depends on it (CLAUDE.md §4.2).
-    void providerRef.current?.speak(character)
+    void providerRef.current?.speak(subject)
   }, [])
 
   return { status, speak }

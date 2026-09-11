@@ -1,6 +1,12 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { Character } from '../types/characters'
-import { characterById, characterSetById, everyCharacter } from '../characters/registry'
+import {
+  characterById,
+  characterSetById,
+  everyCharacter,
+  speakable,
+} from '../characters/registry'
+import type { Speakable } from '../lib/pronunciation'
 import { useDeck } from '../data/useDeck'
 import { systemRng } from '../lib/shuffle'
 import { usePronunciation } from '../lib/usePronunciation'
@@ -54,7 +60,7 @@ export function Writing() {
 
     setCurrent(picked)
     setRevealed(false)
-    speak(picked)
+    speak(speakable(picked))
   }, [pool, current, speak])
 
   return (
@@ -129,7 +135,7 @@ function Prompt({
   character: Character
   revealed: boolean
   status: ReturnType<typeof usePronunciation>['status']
-  onReplay: (character: Character) => void
+  onReplay: (subject: Speakable) => void
   onReveal: () => void
   onNext: () => void
 }) {
@@ -156,7 +162,7 @@ function Prompt({
         {/* The default accessible name of this control names the glyph, which
             would put the answer in the DOM. Here it says what it does. */}
         <SpeakButton
-          character={character}
+          subject={speakable(character)}
           status={status}
           onSpeak={onReplay}
           label="Play the sound again"

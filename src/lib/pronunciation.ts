@@ -1,5 +1,3 @@
-import type { Character } from '../types/characters'
-
 /**
  * Pronunciation (CLAUDE.md §4).
  *
@@ -13,11 +11,35 @@ import type { Character } from '../types/characters'
  * in `usePronunciation` is the whole job.
  */
 
+/**
+ * Something that can be said out loud.
+ *
+ * This module deliberately does NOT know about characters or vocabulary. It
+ * knows about Japanese text and an optional recording of it, which is the whole
+ * of what §4.2's contract needs — "speak the glyph, never the romaji" is a rule
+ * about what string arrives here, not about which model it came from.
+ *
+ * It was typed to `Character` until v2.3, which was fine while a character was
+ * the only thing the app could pronounce. The vocabulary sets made that a lie:
+ * ごちそうさまでした is not a glyph, and wrapping it in a fake `Character` to
+ * get it spoken would have been the tail wagging the dog.
+ *
+ * `audio?: string | undefined` rather than a plain optional, so a caller can
+ * hand over a field that may itself be undefined without `exactOptionalPropertyTypes`
+ * forcing a conditional at every call site.
+ */
+export type Speakable = {
+  /** The Japanese text to say — one glyph, a word, or a whole phrase. */
+  ja: string
+  /** A static audio file, relative to the base path. */
+  audio?: string | undefined
+}
+
 export type PronunciationProvider = {
   readonly kind: 'speech' | 'file'
   /** Whether the MECHANISM exists at all. Not whether it will produce sound. */
   available: () => boolean
-  speak: (character: Character) => Promise<void>
+  speak: (subject: Speakable) => Promise<void>
 }
 
 /**
@@ -131,7 +153,7 @@ export function createSpeechProvider(deps: SpeechDeps): PronunciationProvider {
     kind: 'speech',
     available: () => true,
 
-    async speak(character: Character) {
+    async speak(subject: Speakable) {
       const voice = await resolveJapaneseVoice(deps.synth)
       if (!voice) return
 
@@ -140,13 +162,14 @@ export function createSpeechProvider(deps: SpeechDeps): PronunciationProvider {
       // talking long after they have moved on.
       deps.synth.cancel()
 
-      // The GLYPH, never the romaji. Handing "ka" to a Japanese voice gets it
-      // read as English (CLAUDE.md §4.2).
-      const utterance = new deps.Utterance(character.glyph)
+      // The JAPANESE TEXT, never the romaji. Handing "ka" to a Japanese voice
+      // gets it read as English (CLAUDE.md §4.2).
+      const utterance = new deps.Utterance(subject.ja)
       utterance.voice = voice
       utterance.lang = voice.lang
-      // A shade under natural pace. These are single morae; at 1.0 a learner
-      // gets a syllable and a half of nothing to hold on to.
+      // A shade under natural pace. A single mora at 1.0 is a syllable and a
+      // half of nothing to hold on to; a whole phrase at 1.0 is faster than a
+      // beginner can follow. The same value is right for both reasons.
       utterance.rate = 0.85
 
       await new Promise<void>((resolve) => {
@@ -168,7 +191,7 @@ export function createSpeechProvider(deps: SpeechDeps): PronunciationProvider {
 export type AudioCtor = new (src: string) => HTMLAudioElement
 
 /**
- * Plays `character.audio`. WRITTEN AND TESTED BUT NOT WIRED UP — it is the
+ * Plays `subject.audio`. WRITTEN AND TESTED BUT NOT WIRED UP — it is the
  * receiving end of the decision in §4.1, kept working so that dropping in a
  * licensed audio set is a data change.
  *
@@ -183,10 +206,10 @@ export function createFileProvider(
     kind: 'file',
     available: () => true,
 
-    async speak(character: Character) {
-      const src = character.audio
-      // No file for this character is a normal state, not an error: the whole
-      // set may be partially recorded.
+    async speak(subject: Speakable) {
+      const src = subject.audio
+      // No file for this one is a normal state, not an error: the whole set may
+      // be partially recorded.
       if (src === undefined) return
 
       const audio = new AudioElement(`${base}${src.replace(/^\//, '')}`)

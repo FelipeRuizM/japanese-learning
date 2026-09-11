@@ -1,3 +1,4 @@
+import type { Speakable } from '../lib/pronunciation'
 import type { VocabItem, VocabSet } from '../types/vocab'
 import { WEEK1_GREETINGS } from './week1Greetings'
 import { WEEK1_INTRODUCTION } from './week1Introduction'
@@ -44,4 +45,15 @@ export function everyVocabItem(): VocabItem[] {
  */
 export function vocabItemById(id: string): VocabItem | undefined {
   return everyVocabItem().find((item) => item.id === id)
+}
+
+/**
+ * How a vocabulary item participates in pronunciation (CLAUDE.md §4.2).
+ *
+ * The KANA, never the romaji — and never the English, which a Japanese voice
+ * would mangle just as badly. No item carries a recording yet, so there is no
+ * `audio` to pass on; the field exists on `Speakable` for the day one does.
+ */
+export function speakable(item: VocabItem): Speakable {
+  return { ja: item.kana }
 }

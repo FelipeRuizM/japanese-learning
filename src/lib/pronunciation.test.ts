@@ -5,21 +5,12 @@ import {
   resolveJapaneseVoice,
   type Synth,
 } from './pronunciation'
-import type { Character } from '../types/characters'
-import { DEFAULT_CHARACTER_SET } from '../characters/registry'
+import type { Speakable } from './pronunciation'
 
 // `script` comes from the registry rather than a literal: a lib test
 // hardcoding a ScriptId is exactly the coupling the leak test guards against,
 // and it caught this one.
-const KA: Character = {
-  id: 'test:ka',
-  script: DEFAULT_CHARACTER_SET.id,
-  glyph: 'か',
-  romaji: 'ka',
-  rowId: 'k',
-  vowel: 'a',
-  examples: [{ kana: 'かさ', romaji: 'kasa', english: 'umbrella' }],
-}
+const KA: Speakable = { ja: 'か' }
 
 function voice(lang: string, name = lang): SpeechSynthesisVoice {
   return {
@@ -261,7 +252,7 @@ describe('the file provider', () => {
     expect(FakeAudio.created).toEqual(['/japanese-learning/audio/ka.mp3'])
   })
 
-  it('does nothing for a character with no recording', async () => {
+  it('does nothing for an entry with no recording', async () => {
     FakeAudio.created = []
     await createFileProvider(Audio, '/japanese-learning/').speak(KA)
     // A partially-recorded set is a normal state, not an error.

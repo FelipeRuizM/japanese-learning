@@ -1,8 +1,8 @@
-import type { Character } from '../types/characters'
+import type { Speakable } from '../lib/pronunciation'
 import type { PronunciationStatus } from '../lib/usePronunciation'
 
 /**
- * Play a character's pronunciation.
+ * Play the pronunciation of whatever it is handed.
  *
  * Audio is an enhancement and is never the only channel: wherever this appears,
  * the romaji is already on screen or is revealed by the same interaction
@@ -11,21 +11,22 @@ import type { PronunciationStatus } from '../lib/usePronunciation'
  * has no audio", which is not what happened.
  */
 export function SpeakButton({
-  character,
+  subject,
   status,
   onSpeak,
   className = '',
   label,
 }: {
-  character: Character
+  subject: Speakable
   status: PronunciationStatus
-  onSpeak: (character: Character) => void
+  onSpeak: (subject: Speakable) => void
   className?: string
   /**
    * Overrides the accessible name.
    *
-   * The default names the glyph, which is right everywhere the glyph is already
-   * on screen — and wrong on the one screen where it is the answer. Writing
+   * The default names the text being spoken, which is right everywhere that
+   * text is already on screen — and wrong on the one screen where it is the
+   * answer. Writing
    * practice requires the glyph to be absent from the DOM until the reveal, and
    * an `aria-label` is DOM: a screen reader announces it and a braille display
    * renders it. CLAUDE.md §1.
@@ -38,11 +39,11 @@ export function SpeakButton({
     <button
       type="button"
       disabled={unavailable || status === 'checking'}
-      onClick={() => onSpeak(character)}
+      onClick={() => onSpeak(subject)}
       aria-label={
         unavailable
           ? `Pronunciation unavailable — no Japanese voice on this device`
-          : (label ?? `Play the pronunciation of ${character.glyph}`)
+          : (label ?? `Play the pronunciation of ${subject.ja}`)
       }
       className={[
         'inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-2',
@@ -67,7 +68,7 @@ export function PronunciationNote({ status }: { status: PronunciationStatus }) {
   return (
     <p className="m-0 max-w-prose font-sans text-sm text-ink-2">
       No Japanese voice is installed on this device, so pronunciation can&rsquo;t play.
-      Romaji still shows for every character.
+      Romaji still shows for every card.
     </p>
   )
 }

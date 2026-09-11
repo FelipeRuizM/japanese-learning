@@ -1,5 +1,7 @@
 import type { Character } from '../types/characters'
+import type { Speakable } from '../lib/pronunciation'
 import type { PronunciationStatus } from '../lib/usePronunciation'
+import { speakable } from '../characters/registry'
 import { SpeakButton } from './SpeakButton'
 import { Glyph, Label } from './ui/primitives'
 
@@ -51,7 +53,7 @@ export function Flashcard({
   revealed: boolean
   onFlip: () => void
   pronunciationStatus: PronunciationStatus
-  onSpeak: (character: Character) => void
+  onSpeak: (subject: Speakable) => void
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -102,7 +104,7 @@ export function Flashcard({
         <div className="flex flex-col gap-4 border-l-2 border-accent pl-4">
           <div className="flex items-center gap-3">
             <SpeakButton
-              character={character}
+              subject={speakable(character)}
               status={pronunciationStatus}
               onSpeak={onSpeak}
             />

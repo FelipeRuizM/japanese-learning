@@ -2,28 +2,24 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { PronunciationNote, SpeakButton } from './SpeakButton'
-import { DEFAULT_CHARACTER_SET } from '../characters/registry'
-import { allCharacters } from '../characters/registry'
-import type { Character } from '../types/characters'
+import type { Speakable } from '../lib/pronunciation'
 
-const KA = allCharacters(DEFAULT_CHARACTER_SET).find(
-  (c) => c.romaji === 'ka',
-) as Character
+const KA: Speakable = { ja: 'か' }
 
 describe('SpeakButton', () => {
-  it('plays the character when it is ready', async () => {
+  it('plays what it was handed when it is ready', async () => {
     const user = userEvent.setup()
     const onSpeak = vi.fn()
-    render(<SpeakButton character={KA} status="ready" onSpeak={onSpeak} />)
+    render(<SpeakButton subject={KA} status="ready" onSpeak={onSpeak} />)
 
     await user.click(screen.getByRole('button'))
     expect(onSpeak).toHaveBeenCalledWith(KA)
   })
 
   it('names what it will do, rather than just showing an icon', () => {
-    render(<SpeakButton character={KA} status="ready" onSpeak={() => undefined} />)
+    render(<SpeakButton subject={KA} status="ready" onSpeak={() => undefined} />)
     expect(
-      screen.getByRole('button', { name: `Play the pronunciation of ${KA.glyph}` }),
+      screen.getByRole('button', { name: `Play the pronunciation of ${KA.ja}` }),
     ).toBeInTheDocument()
   })
 
@@ -32,9 +28,7 @@ describe('SpeakButton', () => {
    * "this app has no audio", which is not what happened (CLAUDE.md §4.2).
    */
   it('is disabled and says why when there is no Japanese voice', () => {
-    render(
-      <SpeakButton character={KA} status="unavailable" onSpeak={() => undefined} />,
-    )
+    render(<SpeakButton subject={KA} status="unavailable" onSpeak={() => undefined} />)
     const button = screen.getByRole('button')
     expect(button).toBeDisabled()
     expect(button).toHaveAccessibleName(/no Japanese voice on this device/i)
@@ -42,7 +36,7 @@ describe('SpeakButton', () => {
 
   /** Nothing to say yet — pressing it would be a no-op with no feedback. */
   it('is disabled while the voice list is still resolving', () => {
-    render(<SpeakButton character={KA} status="checking" onSpeak={() => undefined} />)
+    render(<SpeakButton subject={KA} status="checking" onSpeak={() => undefined} />)
     expect(screen.getByRole('button')).toBeDisabled()
   })
 })

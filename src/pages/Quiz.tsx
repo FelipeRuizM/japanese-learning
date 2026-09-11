@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { Character } from '../types/characters'
-import { characterById, everyCharacter } from '../characters/registry'
+import { characterById, everyCharacter, speakable } from '../characters/registry'
 import { useDeck } from '../data/useDeck'
 import { buildRound, type QuizQuestion } from '../lib/quiz'
 import { systemRng } from '../lib/shuffle'
@@ -73,7 +73,7 @@ function Round({ deck, onAgain }: { deck: Character[]; onAgain: () => void }) {
     if (option.id === question.answer.id) setScore((s) => s + 1)
     // Hearing the right sound at the moment of the reveal is the point, whether
     // or not they got it right.
-    speak(question.answer)
+    speak(speakable(question.answer))
   }
 
   const next = () => {

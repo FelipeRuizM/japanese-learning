@@ -8,9 +8,10 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ## Status — 2026-09-11
 
-**Phases 1–7 complete; the course companion (CLAUDE.md §11) is under way at Phase 8.**
-The kana half is finished and unchanged. Phases 8–12 build the JPST 100 companion, and
-they are listed at the bottom of this file.
+**Phases 1–9 complete.** The kana curriculum (1–7) is finished. The course companion
+(CLAUDE.md §11) has its model and its first screen; phases 10–12 build the vocabulary
+quiz, the numbers generator and the grammar cloze. All of it is listed at the bottom of
+this file.
 
 ### Where phases 1–7 left it
 
@@ -510,15 +511,44 @@ that everything after it is a consumer.
 
 ---
 
-## Phase 9 — Vocabulary flashcards
+## Phase 9 — Vocabulary flashcards ✅
 
-- [ ] A set picker over `VOCAB_SETS`, reusing the `SetPicker` pattern
-- [ ] Cards grouped by `VocabGroup`, front **kana**, back **romaji + English + note**
-- [ ] The `example` sentence on the back where one exists — it is the slot being taught
-- [ ] Audio on reveal, through the existing `usePronunciation` — it speaks `kana`
-- [ ] Reuse `Flashcard`'s remount-on-advance invariant, or the next answer leaks (§5)
-- [ ] Decide and document how vocabulary selection relates to the kana deck
-- [ ] `feat: vocabulary flashcards`
+- [x] `#/vocabulary`, with `SetPicker` made **generic over the id type** so one picker
+      serves both registries and the render-nothing-for-one-set rule is written once
+- [x] `VocabCard` — front **kana**, back **romaji + English**, with the note, the group
+      and the example sentence below the reveal
+- [x] Audio on reveal through the existing `usePronunciation`
+- [x] The remount-on-advance invariant carried over, with its own test
+- [x] The deck question answered: **vocabulary does not use the deck at all** (§11.4)
+- [x] `VocabCard` in the styleguide, beside `Flashcard`
+- [x] `feat: vocabulary flashcards`
+
+**Deployed as 2.3.**
+
+> **The pronunciation layer had to change, and it was the only thing in the kana half
+> that did.** `PronunciationProvider.speak` took a `Character`, which was honest while a
+> character was the only pronounceable thing in the app and became a lie the moment a
+> phrase needed saying. It takes a `Speakable` — `{ ja, audio? }` — and each data layer
+> exports a `speakable()` adapter for its own model. Twelve call sites moved, no
+> behaviour changed, and `tsc` found every one of them.
+>
+> This is the Phase 9 entry in the §3.5 ledger: **the model was free, the seam was
+> not.** A second consumer is what tells you which of your interfaces were typed to a
+> model when they should have been typed to a capability.
+
+> **A flaky test, and it was the test that was wrong.** The page shuffles, so the
+> assertions find the item on screen by reading the card's accessible name — and the
+> first version matched with `includes`. Three Week 1 pairs are prefixes of each other
+> (ありがとう/ありがとうございます, おはよう/おはようございます), so whenever the
+> shuffle dealt the long one, the search returned the short one and the run failed.
+> About one visit in eight. Matching the kana exactly fixed it; the suite now runs
+> clean repeatedly rather than usually.
+
+> **Deliberately not built: an "all of Week 1" pseudo-set.** Drilling all 42 at once is
+> a reasonable thing to want, but it means a synthetic `VocabSet` with no class note
+> behind it, which breaks the one rule that keeps this data honest — every set cites its
+> source. If it is wanted, it belongs in the quiz, where a round already spans a chosen
+> scope.
 
 ## Phase 10 — Vocabulary quiz
 

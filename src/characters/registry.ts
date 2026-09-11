@@ -1,3 +1,4 @@
+import type { Speakable } from '../lib/pronunciation'
 import type { Character, CharacterSet } from '../types/characters'
 import { HIRAGANA } from './hiragana'
 import { KATAKANA } from './katakana'
@@ -53,4 +54,16 @@ export function everyCharacter(): Character[] {
  */
 export function characterById(id: string): Character | undefined {
   return everyCharacter().find((character) => character.id === id)
+}
+
+/**
+ * How a character participates in pronunciation (CLAUDE.md §4.2).
+ *
+ * The pronunciation module knows about Japanese text, not about models, so each
+ * data layer says how its own model is spoken. This is the character half; the
+ * vocabulary registry has the matching one. The GLYPH, never the romaji — a
+ * `ja-JP` voice reads "ka" as English.
+ */
+export function speakable(character: Character): Speakable {
+  return { ja: character.glyph, audio: character.audio }
 }

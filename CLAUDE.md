@@ -9,10 +9,15 @@ It is the durable spec. `PLAN.md` holds the phased build order.
 > writing practice), the **dakuten/handakuten rows**, and **katakana**. It teaches
 > **142 characters across two scripts**.
 >
-> **v2.2 opens the second pillar (§11):** the vocabulary model, the registry, and
-> JPST 100 Week 1 as data — 42 items across three sets. No UI yet; phases 9–12 in
-> `PLAN.md` build the flashcards, the vocabulary quiz, the numbers generator and the
-> grammar cloze. **Nothing in the kana half changed to make room for it.**
+> **v2.2 opened the second pillar (§11):** the vocabulary model, the registry, and
+> JPST 100 Week 1 as data — 42 items across three sets, with no UI. **v2.3 put a screen
+> on it** — `#/vocabulary`, flashcards over a chosen set (§11.4). Phases 10–12 in
+> `PLAN.md` build the vocabulary quiz, the numbers generator and the grammar cloze.
+>
+> **v2.3 is also the first change to reach into the kana half**, and it was the
+> pronunciation layer: `speak` was typed to `Character`, which a phrase is not. It now
+> takes a `Speakable` and each data layer adapts its own model (§4.2). Twelve call sites
+> moved; no behaviour changed, and the compiler found every one.
 >
 > (v1.0 scaffold; v1.1 reversed
 > the design system to dark only, see §7; v1.2 the character model and data; v1.3 the
@@ -343,12 +348,24 @@ dropping it in is a data change (§4.2), not a rewrite.
 ### 4.2 The provider interface — `src/lib/pronunciation.ts`
 
 ```ts
+/** Japanese text, and optionally a recording of it. */
+export type Speakable = { ja: string; audio?: string | undefined }
+
 export type PronunciationProvider = {
   readonly kind: 'speech' | 'file'
   available(): boolean
-  speak(character: Character): Promise<void>
+  speak(subject: Speakable): Promise<void>
 }
 ```
+
+> **`speak` took a `Character` until v2.3.** That was fine while a character was
+> the only thing the app could pronounce, and it stopped being true the moment
+> vocabulary arrived: ごちそうさまでした is not a glyph, and wrapping it in a fake
+> `Character` to get it spoken would have been the tail wagging the dog. The module
+> now knows about Japanese text and nothing else, and **each data layer exports its own
+> `speakable()` adapter** — `src/characters/registry.ts` maps a glyph, `src/vocab/registry.ts`
+> maps kana. The rule "speak the glyph, never the romaji" is unchanged; it is now a
+> rule about what each adapter puts in `ja`.
 
 - **`speechProvider`** ships and is the default. `speechSynthesis` with `lang: 'ja-JP'`.
   It speaks the **glyph**, never the romaji — feeding romaji to a Japanese voice
@@ -404,6 +421,7 @@ breathe on desktop.
 #/quiz           Quiz        — recall over the deck
 #/pronunciation  Sounds      — the whole set; tap a character to hear it
 #/writing        Writing     — hear one at random, write it on paper, then check
+#/vocabulary     Vocabulary  — flip through a week's words from the course (§11)
 #/styleguide     Styleguide  — every token and component in isolation
 ```
 
@@ -758,8 +776,9 @@ state, dying when the route unmounts.
    above one chart has to count within it (§5).
 10. An `aria-label` is DOM. On the writing screen, naming the glyph in one hands over the
     answer — which is why `SpeakButton` takes a `label` override.
-11. Vocabulary ids and character ids share one namespace shape but NOT one model. A
-    vocabulary deck is not a character deck; do not pass one to the kana quiz.
+11. Vocabulary ids and character ids share one namespace shape but NOT one model.
+    **Vocabulary never enters `DeckProvider` at all** (§11.4), so the kana quiz cannot
+    receive one — that is structural, not a rule to remember.
 12. The class note's romaji is authoritative even where it is inconsistent with itself.
     "Fixing" `senkou` to `senkoo` changes what the owner is being graded on.
 13. **A CSS transition can leak an answer even when every rendered state is correct.**
@@ -858,7 +877,39 @@ only fit one of them. The build follows that split rather than flattening it:
 > (はたち, いっさい, はっさい, じゅっさい, よねんせい). A hundred flashcards teaches
 > the list; a generator teaches the rule, and the rule is the thing the class taught.
 
-### 11.4 Adding a week
+### 11.4 The vocabulary screen — `#/vocabulary`
+
+**There is no selection step, and that is deliberate.** The kana deck exists because 142
+characters is far too many for one sitting, so the grid had to come first and the deck
+had to carry a choice between screens. A vocabulary set is a class note — sixteen to
+nineteen items, which _is_ one sitting. **The set is the deck**, so choosing one in the
+picker is the whole of the selection, and a second selection grid would add a screen
+that saves nobody any work.
+
+The consequence is worth stating plainly: **vocabulary never enters `DeckProvider`.**
+The kana quiz therefore cannot be handed a vocabulary item — structurally, rather than
+because someone remembered not to.
+
+- `SetPicker` is **generic over the id type** as of v2.3. It asks for `{ id, label }`
+  and nothing else, so a `CharacterSet` and a `VocabSet` both satisfy it without being
+  made to share a base type they have no other reason to share. The rule about rendering
+  nothing for a single set is then written once. The id type is still inferred, so a
+  script id and a vocabulary set id cannot be passed to each other.
+- **`VocabCard` is a sibling of `Flashcard`, not a generalisation of it.** They differ in
+  what the back must carry — a character reveals a reading, a word reveals a reading
+  _and_ a meaning — and in how large the front can be set: ごちそうさまでした at the
+  character card's front size overflows a 375px screen. Merging them would buy one
+  component that branches on which model it was handed, which is worse to own than two
+  short ones that each do one job.
+- **The remount-on-advance invariant applies unchanged** (§5, bite 13), and its test is
+  duplicated rather than shared, because it is the card's invariant and not the page's.
+- **The group label is shown only after the reveal.** "Meals" narrows いただきます to one
+  of two and "Leaving & returning home" narrows ただいま to one of four: a category
+  beside a prompt is a hint. After the reveal it is context, which is what it was for.
+- Each set **cites its class note on screen**, so a card that looks wrong can be checked
+  rather than argued about.
+
+### 11.5 Adding a week
 
 1. Read the week's folder in the vault.
 2. One `VocabSet` per class note, ids `jpst100:w<n>:<romaji>`.

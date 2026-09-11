@@ -4,18 +4,21 @@ import { CharacterGrid } from '../components/CharacterGrid'
 import { PronunciationNote, SpeakButton } from '../components/SpeakButton'
 import { QuizCard } from '../components/QuizCard'
 import { Flashcard } from '../components/Flashcard'
+import { VocabCard } from '../components/VocabCard'
 import { EmptyDeck } from '../components/EmptyDeck'
 import { buildQuestion } from '../lib/quiz'
 import {
   allCharacters,
   CHARACTER_SETS,
   DEFAULT_CHARACTER_SET,
+  speakable,
 } from '../characters/registry'
 import { usePronunciation } from '../lib/usePronunciation'
 import { GridCell, GridGap } from '../components/GridCell'
 import { SoundCell } from '../components/SoundCell'
 import { SetPicker } from '../components/SetPicker'
 import { FLOW_FIXTURE } from '../characters/flowFixture'
+import { VOCAB_SETS, allVocab } from '../vocab/registry'
 import {
   Button,
   ButtonLink,
@@ -72,6 +75,40 @@ const SAMPLE_N = {
   vowel: null,
   examples: [{ kana: 'みかん', romaji: 'mikan', english: 'mandarin orange' }],
 } as const satisfies Character
+
+/**
+ * A live vocabulary card. Reviewable next to `FlashcardDemo` on purpose: the
+ * two are siblings, and the reason they are not one component is easiest to see
+ * side by side — a longer phrase needs a smaller front, and the back carries a
+ * meaning as well as a reading.
+ */
+function VocabCardDemo() {
+  const set = VOCAB_SETS[0]
+  const { status, speak } = usePronunciation()
+  const [revealed, setRevealed] = useState(false)
+  const item = set ? allVocab(set)[0] : undefined
+  if (!item) return null
+
+  return (
+    <div className="flex flex-col gap-3">
+      <VocabCard
+        item={item}
+        group="Daily greetings"
+        revealed={revealed}
+        onFlip={() => {
+          setRevealed((r) => !r)
+        }}
+        pronunciationStatus={status}
+        onSpeak={speak}
+      />
+      <p className="m-0 max-w-prose text-sm text-ink-2">
+        The group label sits with the reveal, not beside the prompt — a category next to
+        a question narrows the answer, and this card is not meant to hint. Same
+        remount-on-advance rule as the character flashcard.
+      </p>
+    </div>
+  )
+}
 
 /** A live flashcard, so the flip and both faces are reviewable in isolation. */
 function FlashcardDemo() {
@@ -140,7 +177,7 @@ function LivePronunciation() {
   const { status, speak } = usePronunciation()
   return (
     <div className="flex items-center gap-3">
-      <SpeakButton character={SAMPLE} status={status} onSpeak={speak} />
+      <SpeakButton subject={speakable(SAMPLE)} status={status} onSpeak={speak} />
       <Label>status: {status}</Label>
     </div>
   )
@@ -245,7 +282,7 @@ export function Styleguide() {
           {(['ready', 'checking', 'unavailable'] as const).map((status) => (
             <div key={status} className="flex flex-col items-center gap-2">
               <SpeakButton
-                character={SAMPLE}
+                subject={speakable(SAMPLE)}
                 status={status}
                 onSpeak={() => undefined}
               />
@@ -264,6 +301,10 @@ export function Styleguide() {
 
       <Section title="Flashcard">
         <FlashcardDemo />
+      </Section>
+
+      <Section title="Vocabulary card">
+        <VocabCardDemo />
       </Section>
 
       <Section title="Quiz card">

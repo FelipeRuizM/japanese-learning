@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Character, ScriptId } from '../types/characters'
-import { CHARACTER_SETS } from '../characters/registry'
+import { CHARACTER_SETS, speakable } from '../characters/registry'
+import type { Speakable } from '../lib/pronunciation'
 import { usePronunciation } from '../lib/usePronunciation'
 import { PronunciationNote, SpeakButton } from '../components/SpeakButton'
 import { GridLayout } from '../components/GridLayout'
@@ -28,7 +29,7 @@ export function Sounds() {
 
   const play = (character: Character) => {
     setLastPlayed(character)
-    speak(character)
+    speak(speakable(character))
   }
 
   /**
@@ -93,7 +94,7 @@ function NowPlaying({
 }: {
   character: Character
   status: ReturnType<typeof usePronunciation>['status']
-  onSpeak: (character: Character) => void
+  onSpeak: (subject: Speakable) => void
 }) {
   return (
     <div aria-live="polite" className="flex flex-col gap-3 border-t border-rule pt-5">
@@ -102,7 +103,7 @@ function NowPlaying({
         <span className="font-sans text-3xl font-semibold text-ink-0">
           {character.romaji}
         </span>
-        <SpeakButton character={character} status={status} onSpeak={onSpeak} />
+        <SpeakButton subject={speakable(character)} status={status} onSpeak={onSpeak} />
       </div>
 
       <ul className="m-0 flex list-none flex-col gap-1 p-0">

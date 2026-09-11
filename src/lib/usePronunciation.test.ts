@@ -1,7 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { usePronunciation } from './usePronunciation'
-import { DEFAULT_CHARACTER_SET } from '../characters/registry'
 
 class FakeUtterance {
   lang = ''
@@ -66,15 +65,7 @@ describe('usePronunciation', () => {
       expect(result.current.status).toBe('unavailable')
     })
     expect(() => {
-      result.current.speak({
-        id: 'x',
-        script: DEFAULT_CHARACTER_SET.id,
-        glyph: 'か',
-        romaji: 'ka',
-        rowId: 'k',
-        vowel: 'a',
-        examples: [],
-      })
+      result.current.speak({ ja: 'か' })
     }).not.toThrow()
   })
 })

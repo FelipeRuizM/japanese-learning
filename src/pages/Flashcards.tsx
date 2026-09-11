@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { Character } from '../types/characters'
-import { characterById } from '../characters/registry'
+import { characterById, speakable } from '../characters/registry'
 import { useDeck } from '../data/useDeck'
 import { shuffle, systemRng } from '../lib/shuffle'
 import { usePronunciation } from '../lib/usePronunciation'
@@ -52,7 +52,7 @@ function Cards({ deck }: { deck: Character[] }) {
     const next = !revealed
     setRevealed(next)
     // Sound on the reveal only — flipping back should be silent.
-    if (next) speak(character)
+    if (next) speak(speakable(character))
   }
 
   return (
