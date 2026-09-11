@@ -3,10 +3,18 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-08-21. Complete at v2.0.** All seven phases are done and all five
-> features in §1 are built, plus two added afterwards on request — the pronunciation
-> chart and writing practice — the **dakuten/handakuten rows**, and now **katakana**.
-> The app teaches **142 characters across two scripts**. (v1.0 scaffold; v1.1 reversed
+> **Status — 2026-09-11. Kana curriculum complete at v2.1; the course companion is
+> under way at v2.2.** The first pillar is finished — all seven phases, all five
+> features in §1, plus two added afterwards on request (the pronunciation chart and
+> writing practice), the **dakuten/handakuten rows**, and **katakana**. It teaches
+> **142 characters across two scripts**.
+>
+> **v2.2 opens the second pillar (§11):** the vocabulary model, the registry, and
+> JPST 100 Week 1 as data — 42 items across three sets. No UI yet; phases 9–12 in
+> `PLAN.md` build the flashcards, the vocabulary quiz, the numbers generator and the
+> grammar cloze. **Nothing in the kana half changed to make room for it.**
+>
+> (v1.0 scaffold; v1.1 reversed
 > the design system to dark only, see §7; v1.2 the character model and data; v1.3 the
 > grid and deck; v1.4 pronunciation; v1.5 the quiz; v1.6 flashcards; v1.7 the quality
 > pass; v1.8 the pronunciation chart; v1.9 the voiced rows and writing practice.)
@@ -20,7 +28,8 @@ It is the durable spec. `PLAN.md` holds the phased build order.
 > workflow has never run. That is the only thing standing between this and a live site.
 >
 > Kanji is the remaining script, and it is the one that needs the `layout: 'flow'`
-> branch (§3.2).
+> branch (§3.2). The course teaches it (the vault has a `Kanji/Numbers 1-10` folder), so
+> it is no longer hypothetical.
 
 ---
 
@@ -44,7 +53,14 @@ It is the durable spec. `PLAN.md` holds the phased build order.
 A practice app for a **beginner learning Japanese**. It teaches **hiragana and
 katakana**. The architecture must assume **kanji arrives later**.
 
-Five features, and no more:
+The app has **two pillars**, and they are not the same kind of thing:
+
+1. **The kana curriculum** — fixed, finite, and finished. Five features, and no more
+   (plus the two added on request). It teaches a closed set of characters.
+2. **The course companion** — open-ended and growing. It teaches whatever JPST 100
+   taught this week, and a new week arrives as data. See **§11**.
+
+The kana curriculum's features:
 
 1. **Character grid** — every character, organised by row, click to select into a deck.
 2. **Flashcards** — flip through the selected deck.
@@ -721,6 +737,11 @@ Do not build these, and do not sneak them in as a "small addition":
 The end-of-round quiz score is the one permitted exception and it lives in component
 state, dying when the route unmounts.
 
+> **Vocabulary is NOT on this list, as of v2.2.** The owner is taking JPST 100 and asked
+> for a way to drill what the course teaches each week. That is a second pillar (§1),
+> not a "small addition" to the first — and every prohibition above still binds it: the
+> vocabulary decks are as unpersisted and as untracked as the kana deck is.
+
 ### Things that will bite you — quick list
 
 1. A wrong Vite `base` gives a blank page with 404s on every asset.
@@ -737,7 +758,109 @@ state, dying when the route unmounts.
    above one chart has to count within it (§5).
 10. An `aria-label` is DOM. On the writing screen, naming the glyph in one hands over the
     answer — which is why `SpeakButton` takes a `label` override.
-11. **A CSS transition can leak an answer even when every rendered state is correct.**
+11. Vocabulary ids and character ids share one namespace shape but NOT one model. A
+    vocabulary deck is not a character deck; do not pass one to the kana quiz.
+12. The class note's romaji is authoritative even where it is inconsistent with itself.
+    "Fixing" `senkou` to `senkoo` changes what the owner is being graded on.
+13. **A CSS transition can leak an answer even when every rendered state is correct.**
     Changing content and reversing a transform on the same node animates the NEW content
     through the old transform. Remount instead of un-flipping (§5). jsdom runs no
     transitions, so only a browser — or a test pinning node identity — catches this.
+
+---
+
+## 11. Vocabulary — the course companion
+
+The second pillar (§1). The owner is taking **JPST 100** and keeps notes in an Obsidian
+vault; this is where what the class taught becomes something drillable.
+
+**The vault is the source of truth, and it is readable directly:**
+
+```
+C:\Users\felip\Desktop\Home\Obsidian Vault\big-brain\UBC\Winter 1\JPST 100\
+```
+
+(There is a second, near-empty `Obsidian Vault` under `OneDrive/Documentos`. It is not
+the one. Do not read it and conclude the notes are missing.)
+
+A week's folder holds one note per topic. **Read the notes; do not ask for them to be
+pasted.** Every `VocabSet` cites the note it came from, so a card that looks wrong can
+be checked against the source rather than argued about.
+
+### 11.1 The model — `src/types/vocab.ts`
+
+```ts
+export type VocabExample = { kana: string; romaji: string; english: string }
+
+export type VocabItem = {
+  id: string // 'jpst100:w1:ohayoo' — course-qualified
+  kana: string // おはよう
+  romaji: string // ohayoo — as the class writes it
+  english: string // Good morning
+  note?: string // 'polite' — secondary text, never a prompt or an answer
+  example?: VocabExample // only where the item is a building block
+}
+
+export type VocabGroup = { id: string; label: string; items: VocabItem[] }
+
+export type VocabSet = {
+  id: string // 'jpst100-w1-greetings'
+  label: string
+  source: string // the class note this was transcribed from
+  groups: VocabGroup[]
+}
+```
+
+**This is deliberately not the character model, and the reasoning should not be
+re-litigated.** A character is a glyph with a position in a chart — a row, a vowel, a
+set of example words that contain it. A vocabulary item is a word with a meaning and no
+chart to sit in. Registering Week 1 as a `CharacterSet` with `layout: 'flow'` was the
+cheap option and was rejected: `glyph` would hold a whole sentence, the meaning would be
+smuggled into `examples[0].english`, `ScriptId` would have to widen to admit a value
+that is not a script, three data-integrity tests would need loosening, and the quiz's
+distractor tiers — keyed on `rowId` and `vowel` — are meaningless for words.
+
+### 11.2 The rules
+
+- **`src/vocab/registry.ts` exports `VOCAB_SETS`**, and a new week is **a data module
+  plus one entry** — the same rule the character registry follows, for the same reason.
+  Nothing that renders vocabulary may import a week's module or name a week.
+- **Every entry is kana.** A test asserts it, allowing only the wave dash `〜` (the
+  missing half of a suffix, `〜じん`) and the prolonged sound mark `ー`.
+- **There is no field for the written form in Chinese characters, and adding one is a
+  real decision rather than a detail.** The leak test (§3.2) forbids naming a script
+  outside the character data layer, so a field named for one would have to widen that
+  guard — and a guard widened as a side effect of an unrelated feature is a guard that
+  stops holding. If the course starts marking written forms, raise it as its own change.
+- **Romaji is spelled the way the class spells it**, not the way Hepburn would:
+  `ohayoo`, `sayoonara`, `gochisoosama`. These are the strings the owner is graded on.
+  Where the class note is internally inconsistent, **follow the note** — `senkou` stays
+  `senkou` even beside `ohayoo`.
+- **Two items really do share a meaning** — おはよう/おはようございます and
+  ありがとう/ありがとうございます, each a casual/polite pair. This is the vocabulary
+  version of the お/を collision (§6): they may never be two options in one question.
+  `registry.test.ts` pins the list, so a **new** collision typed in with a later week
+  fails a test rather than surfacing on screen.
+
+### 11.3 What the course material actually is
+
+Week 1 made it obvious that "vocabulary" is four different shapes, and that flashcards
+only fit one of them. The build follows that split rather than flattening it:
+
+| Shape                 | Example          | Drill                             |
+| --------------------- | ---------------- | --------------------------------- |
+| Fixed phrases         | いただきます     | Flashcards, kana ↔ English        |
+| Building-block nouns  | がくせい, 〜じん | Flashcards, with the example slot |
+| A generative **rule** | numbers 1–100    | A generator, **not** 100 cards    |
+| A **pattern**         | です, の         | Cloze — `わたし＿がくせいです`    |
+
+> **Do not turn the numbers into a deck.** 1–100 is a rule plus five irregulars
+> (はたち, いっさい, はっさい, じゅっさい, よねんせい). A hundred flashcards teaches
+> the list; a generator teaches the rule, and the rule is the thing the class taught.
+
+### 11.4 Adding a week
+
+1. Read the week's folder in the vault.
+2. One `VocabSet` per class note, ids `jpst100:w<n>:<romaji>`.
+3. Register it. Run the tests — the shared-meaning list is the one most likely to fire.
+4. Bump `APP_VERSION`, commit, report.

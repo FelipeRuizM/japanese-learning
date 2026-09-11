@@ -6,7 +6,13 @@ deploy, and one conventional commit. **Stop after every phase and wait for "cont
 
 ---
 
-## Status — 2026-08-21
+## Status — 2026-09-11
+
+**Phases 1–7 complete; the course companion (CLAUDE.md §11) is under way at Phase 8.**
+The kana half is finished and unchanged. Phases 8–12 build the JPST 100 companion, and
+they are listed at the bottom of this file.
+
+### Where phases 1–7 left it
 
 **Complete at v2.0.** All seven phases are done and all five original features are
 built, plus two added on request — the **pronunciation chart** and **writing practice** —
@@ -451,3 +457,111 @@ nothing else.
 - **The quiz is last of the feature phases.** It is the only one with real logic, it is
   the widest consumer of the model, and it is where an abstraction that did not hold
   would surface.
+
+---
+
+# Part two — the course companion
+
+The second pillar (CLAUDE.md §11). Everything above teaches a **closed** set of
+characters and is done. Everything below teaches **whatever JPST 100 taught this week**,
+and grows.
+
+The four phases after this one are four different drills because Week 1 turned out to be
+four different shapes of material (§11.3). Resist the urge to make one screen serve all
+of them — a hundred number flashcards is the exact mistake that shape is warning about.
+
+---
+
+## Phase 8 — The vocabulary model ✅
+
+The hinge, and the direct analogue of Phase 2: no UI, just the model and the data, so
+that everything after it is a consumer.
+
+- [x] `src/types/vocab.ts` — `VocabItem`, `VocabGroup`, `VocabSet`
+- [x] `src/vocab/registry.ts` — `VOCAB_SETS`, `vocabSetById`, `allVocab`,
+      `everyVocabItem`, `vocabItemById`
+- [x] Week 1 as three sets, one per class note, read from the vault:
+      **Greetings** (16), **Self introduction** (19), **Everyday words** (7) — 42 items
+- [x] `src/vocab/registry.test.ts` — ids unique across every set at once, every entry
+      kana-only, romaji in the class's spelling, no empty group, every set cites a source
+- [x] **The shared-meaning test** — pins おはよう/おはようございます and
+      ありがとう/ありがとうございます so a later week's collision fails a test rather
+      than surfacing in a quiz
+- [x] CLAUDE.md §11 written; §1 and §10 reconciled with a second pillar existing
+- [x] `feat: the vocabulary model and JPST 100 week 1`
+
+**Deployed as 2.2.**
+
+> **Why not `layout: 'flow'`.** Registering Week 1 as a `CharacterSet` was the cheap
+> option — every existing screen would have rendered it immediately. It was rejected
+> because `glyph` would hold a whole sentence, the meaning would hide in
+> `examples[0].english`, `ScriptId` would widen to admit a non-script, and the quiz's
+> `rowId`/`vowel` distractor tiers are meaningless for words. Reusing the model would
+> have cost three loosened data-integrity tests to buy UI that does not fit anyway.
+
+**Deliberately deferred, and both are real:**
+
+- **No written form in Chinese characters.** Adding that field means widening the leak
+  test, which is not something to do as a side effect (§11.2).
+- **Vocabulary is not in the deck yet.** Whether vocabulary shares `DeckProvider` with
+  characters or gets its own selection is a Phase 9 decision — the kana quiz must never
+  receive a vocabulary item (§10 bite 11), and that constraint is easier to honour once
+  there is a screen to look at.
+
+---
+
+## Phase 9 — Vocabulary flashcards
+
+- [ ] A set picker over `VOCAB_SETS`, reusing the `SetPicker` pattern
+- [ ] Cards grouped by `VocabGroup`, front **kana**, back **romaji + English + note**
+- [ ] The `example` sentence on the back where one exists — it is the slot being taught
+- [ ] Audio on reveal, through the existing `usePronunciation` — it speaks `kana`
+- [ ] Reuse `Flashcard`'s remount-on-advance invariant, or the next answer leaks (§5)
+- [ ] Decide and document how vocabulary selection relates to the kana deck
+- [ ] `feat: vocabulary flashcards`
+
+## Phase 10 — Vocabulary quiz
+
+- [ ] Two directions, 50/50: **kana → English** and **English → kana**
+- [ ] Distractors from the same `VocabGroup` first, then the set, then the registry —
+      the same tiering logic as §6, on a different key
+- [ ] **The shared-meaning exclusion** — おはよう and おはようございます can never be
+      options in one question. Key it on the displayed value, not on a named pair, so
+      a later week's collision is handled before it is typed in
+- [ ] A group smaller than four still yields four distinct options
+- [ ] `feat: the vocabulary quiz`
+
+## Phase 11 — The numbers drill
+
+Not flashcards. A **generator**, because 1–100 is a rule (CLAUDE.md §11.3).
+
+- [ ] `src/lib/numbers.ts` — pure, injected `rng`: a number in, its kana reading out
+- [ ] The rule: `[tens]じゅう[ones]`, dropping either half when zero
+- [ ] Counting readings — **よん** not し, **なな** not しち, **きゅう** not く
+- [ ] The irregulars as a data table: いっさい, はっさい, じゅっさい/じっさい, **はたち**,
+      and **よねんせい**
+- [ ] Three question types: a numeral → its reading, an age → its reading, a year in
+      school → its reading
+- [ ] Unit tests over the whole 1–100 range, not a sample
+- [ ] `feat: the numbers drill`
+
+## Phase 12 — The grammar cloze
+
+- [ ] `src/lib/cloze.ts` — pure, injected `rng`
+- [ ] です patterns: present/past × affirmative/negative, and the か question
+- [ ] の patterns: possession, origin/category, chaining, standing in for a noun
+- [ ] Sentences built from Week 1 vocabulary, so the drill never needs an unknown word
+- [ ] The blank is the **particle or the copula**, never the noun
+- [ ] `feat: the grammar cloze`
+
+---
+
+## Notes on sequencing, part two
+
+- **Phase 8 is the hinge, exactly as Phase 2 was.** The vocabulary model is what makes a
+  new week cost a data module and one registry entry. Nothing broadens until it is in.
+- **Flashcards precede the quiz**, because the quiz is the wider consumer of the model
+  and the flashcard screen is where the deck question gets answered.
+- **The numbers drill and the cloze are last** because they are the two with real logic
+  and no existing analogue — and because a week of using the flashcards will say more
+  about what they should be than a design argument now will.
