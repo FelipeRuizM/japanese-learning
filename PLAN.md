@@ -655,14 +655,38 @@ Not flashcards. A **generator**, because 1–100 is a rule (CLAUDE.md §11.3, §
 
 ---
 
+## Phase 13 — The Kana section ✅
+
+- [x] `NAV_GROUPS` in `AppLayout` — two groups, **Kana** and **Course**
+- [x] Kana: Characters, Flashcards, Quiz, Sounds, Writing
+- [x] Course: Vocabulary, Numbers, Grammar
+- [x] One landmark per group, named by `aria-labelledby` off the visible heading
+- [x] `App.test.tsx` asserts the grouping — membership and count, not just presence
+- [x] `feat: group the nav into Kana and Course sections`
+
+**Deployed as 2.7.**
+
+> **The URLs did not move, and that was a choice rather than laziness.** Nesting the
+> routes to match the menu (`#/kana/quiz`) buys tidier strings nobody reads, at the cost
+> of every bookmark and every test path. Grouping is a statement about the MENU; the
+> address space was already fine.
+
+> **The test had to change shape, not just its selectors.** The old one asserted three
+> links exist somewhere in a nav named "Primary" — which a link that drifted from one
+> pillar to the other would still pass, and that drift is the only regression this phase
+> can have. It now asserts membership per landmark and pins the count, so a route added
+> to the wrong group fails.
+
+> **`aria-labelledby`, not `aria-label`.** The group heading is on screen, so the
+> landmark's accessible name is the same string a voice-control user can read out —
+> the §8 lesson from the grid cell's mismatched label, applied before it bit twice.
+
+---
+
 ## What is left
 
 - **Deploy it.** No remote, so no workflow run, so no site (§2). Everything else on this
   list is smaller than this one.
-- **The nav carries eight flat destinations across two pillars** and wants grouping
-  rather than a ninth entry. The wrap still holds at 375px, but "Quiz" and "Grammar"
-  sitting in one row with no indication that one is kana and one is the course is the
-  kind of thing that reads fine to whoever built it.
 - **Week 2**, whenever the vault has it — a data module and a registry entry per §11.8.
 - **Kanji**, which the course teaches and which needs the `layout: 'flow'` branch the
   grid has carried unused since Phase 2 (§3.2).
