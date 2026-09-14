@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import type { VocabEntry } from '../types/vocab'
 import { everyVocabEntry, speakable } from '../vocab/registry'
-import { useVocabScope, type VocabScope } from '../lib/useVocabScope'
+import { useVocabScope } from '../lib/useVocabScope'
 import { shuffle, systemRng } from '../lib/shuffle'
 import {
+  buildVocabQuestion,
   buildVocabRound,
   roundLength,
   roundSizeOptions,
@@ -17,7 +18,13 @@ import { ScopePicker } from '../components/ScopePicker'
 import { RoundSizePicker } from '../components/RoundSizePicker'
 import { VocabCard } from '../components/VocabCard'
 import { VocabQuizCard } from '../components/VocabQuizCard'
-import { Button, Chip, HeadingLabel, Label } from '../components/ui/primitives'
+import { MarkWrong } from '../components/MarkWrong'
+import { StepNav } from '../components/StepNav'
+import { RoundSummary } from '../components/RoundSummary'
+import { PassSummary } from '../components/PassSummary'
+import { useCardPass } from '../lib/useCardPass'
+import { useQuizRound } from '../lib/useQuizRound'
+import { Chip, HeadingLabel, Label } from '../components/ui/primitives'
 
 /**
  * Vocabulary (CLAUDE.md §11.4).
@@ -95,12 +102,12 @@ export function Vocabulary() {
             not something anyone asked for.
           */}
           {mode === 'cards' ? (
-            <Cards key={scope.key} entries={scope.entries} />
+            <CardsMode key={scope.key} entries={scope.entries} />
           ) : (
             <Quiz
               key={`${scope.key}::${String(activeSize)}`}
-              scope={scope}
               size={activeSize}
+              entries={scope.entries}
             />
           )}
 
@@ -130,7 +137,48 @@ function NothingSelected() {
   )
 }
 
-function Cards({ entries }: { entries: VocabEntry[] }) {
+/**
+ * A pass, and the redo passes that follow it.
+ *
+ * THE REDO SUBSET LIVES HERE, one level above the pass itself, for the reason
+ * every "go again" in this app needs a wrapper: a component cannot remount
+ * itself, and remounting is what resets the position, the marks and the
+ * shuffle in one move.
+ *
+ * It is keyed on the SCOPE by its caller, so turning a topic on mid-redo throws
+ * the redo away rather than leaving you in a three-card pass drawn from a
+ * selection you no longer have.
+ */
+function CardsMode({ entries }: { entries: VocabEntry[] }) {
+  const [passId, setPassId] = useState(0)
+  /** The cards a redo pass covers, or `null` for the whole selection. */
+  const [redoOver, setRedoOver] = useState<VocabEntry[] | null>(null)
+
+  return (
+    <Cards
+      key={passId}
+      entries={redoOver ?? entries}
+      onRedo={(missed) => {
+        setRedoOver(missed)
+        setPassId((n) => n + 1)
+      }}
+      onAgain={() => {
+        setRedoOver(null)
+        setPassId((n) => n + 1)
+      }}
+    />
+  )
+}
+
+function Cards({
+  entries,
+  onRedo,
+  onAgain,
+}: {
+  entries: VocabEntry[]
+  onRedo: (missed: VocabEntry[]) => void
+  onAgain: () => void
+}) {
   const { status, speak } = usePronunciation()
 
   /**
@@ -140,78 +188,86 @@ function Cards({ entries }: { entries: VocabEntry[] }) {
    */
   const [cards] = useState<VocabEntry[]>(() => shuffle(entries, systemRng))
 
-  const [index, setIndex] = useState(0)
-  const [revealed, setRevealed] = useState(false)
+  const pass = useCardPass(
+    cards,
+    (entry) => entry.item.id,
+    (entry) => {
+      speak(speakable(entry.item))
+    },
+  )
 
-  const card = cards[index]
-  if (!card) return null
-
-  const go = (next: number) => {
-    setIndex(next)
-    // A new card always starts face down. Carrying the revealed state across
-    // would hand over the next meaning for free.
-    setRevealed(false)
-  }
-
-  const flip = () => {
-    const next = !revealed
-    setRevealed(next)
-    // Sound on the reveal only — flipping back should be silent.
-    if (next) speak(speakable(card.item))
+  if (pass.done || pass.card === undefined) {
+    return (
+      <PassSummary
+        total={cards.length}
+        marked={pass.markedCount}
+        onRedo={() => {
+          onRedo(pass.missed)
+        }}
+        onAgain={onAgain}
+      />
+    )
   }
 
   return (
     <>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <HeadingLabel>
-          Card {index + 1} of {cards.length}
+          Card {pass.index + 1} of {cards.length}
         </HeadingLabel>
-        <Label>{revealed ? 'Showing the meaning' : 'Tap the card to reveal'}</Label>
+        <div className="flex items-center gap-3">
+          {pass.markedCount > 0 ? <Chip>{pass.markedCount} marked</Chip> : null}
+          <Label>
+            {pass.revealed ? 'Showing the meaning' : 'Tap the card to reveal'}
+          </Label>
+        </div>
       </header>
 
       <VocabCard
-        item={card.item}
-        group={card.groupLabel}
-        revealed={revealed}
-        onFlip={flip}
+        item={pass.card.item}
+        group={pass.card.groupLabel}
+        revealed={pass.revealed}
+        onFlip={pass.flip}
         pronunciationStatus={status}
         onSpeak={speak}
       />
 
-      <nav aria-label="Cards" className="flex items-center justify-between gap-3">
-        <Button
-          onClick={() => {
-            go(index - 1)
-          }}
-          disabled={index === 0}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="primary"
-          onClick={() => {
-            go(index + 1)
-          }}
-          disabled={index + 1 >= cards.length}
-        >
-          Next
-        </Button>
-      </nav>
+      {/* Below the card, not on its back face: a button cannot contain another
+          button, the same constraint that puts the replay control here (§5). */}
+      <div className="flex justify-center">
+        <MarkWrong marked={pass.isMarked} onToggle={pass.toggleMark} />
+      </div>
+
+      <StepNav
+        label="Cards"
+        nextLabel={pass.isLast ? 'See how you did' : 'Next'}
+        onPrevious={pass.previous}
+        onNext={pass.next}
+        canGoBack={pass.canGoBack}
+      />
 
       <PronunciationNote status={status} />
     </>
   )
 }
 
-function Quiz({ scope, size }: { scope: VocabScope; size: RoundSize }) {
+function Quiz({ size, entries }: { size: RoundSize; entries: VocabEntry[] }) {
   const [roundId, setRoundId] = useState(0)
+  /** The questions a retry covers, or `null` for a fresh round over the scope. */
+  const [retryOver, setRetryOver] = useState<VocabQuizQuestion[] | null>(null)
 
   return (
     <Round
       key={roundId}
-      scope={scope}
       size={size}
+      entries={entries}
+      retryOver={retryOver}
+      onRetry={(missed) => {
+        setRetryOver(missed)
+        setRoundId((n) => n + 1)
+      }}
       onAgain={() => {
+        setRetryOver(null)
         setRoundId((n) => n + 1)
       }}
     />
@@ -219,12 +275,16 @@ function Quiz({ scope, size }: { scope: VocabScope; size: RoundSize }) {
 }
 
 function Round({
-  scope,
   size,
+  entries,
+  retryOver,
+  onRetry,
   onAgain,
 }: {
-  scope: VocabScope
   size: RoundSize
+  entries: VocabEntry[]
+  retryOver: VocabQuizQuestion[] | null
+  onRetry: (missed: VocabQuizQuestion[]) => void
   onAgain: () => void
 }) {
   const { status, speak } = usePronunciation()
@@ -233,93 +293,79 @@ function Round({
   // which React is free to discard and recompute — that would reshuffle the
   // questions underneath the learner.
   const [questions] = useState<VocabQuizQuestion[]>(() =>
-    // The last-resort distractor pool is EVERY registered item, not just the
-    // chosen scope's. It is only reached by a group too small to fill four
-    // options, and a colliding meaning can never be drawn regardless.
-    buildVocabRound(
-      scope.entries,
-      everyVocabEntry(),
-      systemRng,
-      roundLength(size, scope.entries.length),
-    ),
+    retryOver === null
+      ? // The last-resort distractor pool is EVERY registered item, not just the
+        // chosen scope's. It is only reached by a group too small to fill four
+        // options, and a colliding meaning can never be drawn regardless.
+        buildVocabRound(
+          entries,
+          everyVocabEntry(),
+          systemRng,
+          roundLength(size, entries.length),
+        )
+      : // A RETRY ASKS THE SAME WORDS AS NEW QUESTIONS, and the round length
+        // does not apply — you asked for the ones you missed, all of them.
+        // Distractors still come from the WHOLE scope, so a retry over three
+        // words is not three words shown to each other.
+        shuffle(retryOver, systemRng).map((q) =>
+          buildVocabQuestion(q.answer, entries, everyVocabEntry(), systemRng),
+        ),
   )
 
-  const [index, setIndex] = useState(0)
-  const [chosen, setChosen] = useState<VocabEntry | null>(null)
-  const [score, setScore] = useState(0)
-  const [done, setDone] = useState(false)
+  const round = useQuizRound<VocabQuizQuestion, VocabEntry>(
+    questions,
+    (question, choice) => choice.item.id === question.answer.item.id,
+  )
 
-  const question = questions[index]
-
-  if (done || !question) {
-    return <RoundSummary score={score} total={questions.length} onAgain={onAgain} />
+  if (round.done || round.question === undefined) {
+    return (
+      <RoundSummary
+        score={round.score}
+        total={questions.length}
+        missed={round.missed.length}
+        onRetry={() => {
+          onRetry(round.missed)
+        }}
+        onAgain={onAgain}
+        perfect="Every one. Change the topics, or go again."
+      />
+    )
   }
 
+  const question = round.question
+
   const choose = (option: VocabEntry) => {
-    if (chosen !== null) return
-    setChosen(option)
-    if (option.item.id === question.answer.item.id) setScore((s) => s + 1)
+    if (round.chosen !== null) return
+    round.answer(option)
     // Hearing it at the moment of the reveal is the point, whether or not they
     // got it right.
     speak(speakable(question.answer.item))
-  }
-
-  const next = () => {
-    setChosen(null)
-    if (index + 1 >= questions.length) setDone(true)
-    else setIndex(index + 1)
   }
 
   return (
     <>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <HeadingLabel>
-          Question {index + 1} of {questions.length}
+          Question {round.index + 1} of {questions.length}
         </HeadingLabel>
-        <Chip>{score} correct</Chip>
+        <div className="flex items-center gap-3">
+          {round.isReview ? <Label>Reviewing</Label> : null}
+          <Chip>{round.score} correct</Chip>
+        </div>
       </header>
 
-      <VocabQuizCard
-        question={question}
-        chosen={chosen}
-        onChoose={choose}
-        onNext={next}
-        isLast={index + 1 >= questions.length}
+      <VocabQuizCard question={question} chosen={round.chosen} onChoose={choose} />
+
+      <StepNav
+        label="Questions"
+        nextLabel={round.isLast ? 'See how you did' : 'Next'}
+        onPrevious={round.previous}
+        onNext={round.next}
+        canGoBack={round.canGoBack}
+        canGoNext={round.canGoNext}
       />
 
       <PronunciationNote status={status} />
     </>
-  )
-}
-
-/**
- * The round summary. In component state and gone the moment this route
- * unmounts — a score for the round you just did is not progress tracking, and
- * nothing here is written anywhere (CLAUDE.md §10).
- */
-function RoundSummary({
-  score,
-  total,
-  onAgain,
-}: {
-  score: number
-  total: number
-  onAgain: () => void
-}) {
-  return (
-    <div className="flex flex-col items-start gap-4">
-      <HeadingLabel>Round complete</HeadingLabel>
-      <p className="m-0 font-sans text-5xl font-semibold text-ink-0">
-        {score} / {total}
-      </p>
-      <p className="m-0 max-w-prose text-ink-1">
-        {score === total
-          ? 'Every one. Change the topics, or go again.'
-          : 'Nothing is recorded — start another round whenever you like.'}
-      </p>
-      <Button variant="primary" onClick={onAgain}>
-        Go again
-      </Button>
-    </div>
   )
 }

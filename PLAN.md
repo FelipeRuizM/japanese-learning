@@ -863,6 +863,70 @@ Not flashcards. A **generator**, because 1–100 is a rule (CLAUDE.md §11.3, §
 > topic label are drawn from overlapping vocabularies and ALWAYS could collide. Scope
 > queries to the region that owns them; do not rely on a string being unique on screen.
 
+---
+
+## Phase 17 — Paging, marking and retries ✅
+
+- [x] `src/lib/useQuizRound.ts` — the state all four quizzes were duplicating
+- [x] `src/lib/useCardPass.ts` — the same for both flashcard screens, plus marks
+- [x] `StepNav` — Previous / Next, always on screen, Next blocked until answered
+- [x] Going back is **review**: options locked, verdict standing, score unmoved
+- [x] `MarkWrong` — one-sided marking on both card screens
+- [x] `RoundSummary` / `PassSummary` — one each, replacing four and two copies
+- [x] Retry the missed / redo the marked, on all five drills
+- [x] `feat: page back and forth, mark cards wrong, and retry what you missed`
+
+**Deployed as 3.1.**
+
+> **THE NEXT BUTTON HAD TO LEAVE THE CARD BEFORE ANY OF THIS WORKED.** It lived inside
+> the reveal, so it existed only once a question was answered — which left nowhere for a
+> Previous to go and no way back off an unanswered question at all. Moving navigation
+> into `StepNav` is what made the feature possible, and it made the quiz screens and the
+> flashcard screens work the same way, which they visibly did not before.
+
+> **Going back is REVIEW, never a second attempt.** A score you can page back and repair
+> stops being a reading of the round you actually did. The options stay disabled and the
+> verdict stands.
+
+> **`isReview` is not `chosen !== null`, and getting that wrong was a real bug.** One is
+> a result you are being shown, the other one you are re-reading. The first attempt set a
+> flag on answering and never cleared it, so "forward then straight back" looked like
+> answering because the index matched again. **The kana quiz test passed it** — that test
+> happened to answer a second question before going back. The numbers drill test, written
+> from the same template, went one step shorter and failed. Cleared on every move now.
+
+> **A retry asks the same items as NEW questions**, distractors redrawn and direction
+> re-rolled. Replaying the identical question can be answered from where the right option
+> sat last time, which tests recall of a layout rather than of a character. It matters
+> most on the numbers drill, where the distractors ARE the predicted mistakes (§11.6).
+
+> **A retry subset must be tagged with the deck it came from.** It deliberately outlives
+> the remount that starts it, so without a tag, changing the selection mid-retry leaves
+> you answering things you just deselected — which reads as a data bug and is a
+> stale-state one. Comparing a tag discards it exactly when it stops making sense, with
+> no effect and no second source of truth. Three tests pin it, one per screen that has a
+> selection.
+
+> **Marking is ONE-SIDED, and the summary's big number is what you did NOT mark.**
+> Grading forty-four cards you knew is work nobody does, so there is no "I got it right"
+> control and no unset third state. The consequence is that the figure answering "how did
+> that go" is the unmarked count; showing the marked count large would read as a score
+> where bigger is worse. The screen states the assumption rather than leaving it to be
+> inferred from a discrepancy.
+
+> **Two extractions, and the threshold was reached honestly.** Four quizzes held
+> byte-identical round state and four near-identical summaries; two card screens held
+> identical pass state. That was tolerable while the state did nothing — it stopped being
+> tolerable the moment all six had to grow an answer history. Both are HOOKS rather than
+> components, which is the split `ChoiceFeedback` already makes: what the drills genuinely
+> differ in is the prompt and the options, and a shared card would take those as
+> parameters and be a parameter list wearing a component's clothes.
+
+> **A section title collided with a control's own label**, again. "Mark wrong" as a
+> styleguide heading above a live `MarkWrong` toggle is two elements with that text; the
+> section is "Marking a card wrong" now. Third instance of the same shape after でんわ /
+> "Phone" — a string being unique on screen is never something to rely on.
+
 ## What is left
 
 - **Deploy it.** No remote, so no workflow run, so no site (§2). Everything else on this

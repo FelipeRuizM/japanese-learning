@@ -1,7 +1,7 @@
 import type { Character } from '../types/characters'
 import type { QuizQuestion } from '../lib/quiz'
 import { displayValue } from '../lib/quiz'
-import { Button, Glyph, Label } from './ui/primitives'
+import { Glyph, Label } from './ui/primitives'
 import { Verdict } from './ChoiceFeedback'
 import { optionButtonClasses } from './optionStyles'
 
@@ -18,15 +18,11 @@ export function QuizCard({
   question,
   chosen,
   onChoose,
-  onNext,
-  isLast,
 }: {
   question: QuizQuestion
   /** `null` until the learner commits to an answer. */
   chosen: Character | null
   onChoose: (option: Character) => void
-  onNext: () => void
-  isLast: boolean
 }) {
   const answered = chosen !== null
   const correct = chosen?.id === question.answer.id
@@ -78,28 +74,23 @@ export function QuizCard({
         })}
       </ul>
 
+      {/* aria-live so the verdict reaches a screen reader without moving focus
+          away from the option they just pressed. Navigation is a separate,
+          always-present control now, so nothing steals focus on answering. */}
       {answered && (
-        <div className="flex flex-col gap-4">
-          {/* aria-live so the verdict reaches a screen reader without moving
-              focus away from where the learner is. */}
-          <div aria-live="polite" className="flex flex-col gap-2">
-            <Verdict correct={correct} />
+        <div aria-live="polite" className="flex flex-col gap-2">
+          <Verdict correct={correct} />
 
-            {/* The answer is always restated, even when they got it right —
+          {/* The answer is always restated, even when they got it right —
                 reading it back is what makes the pairing stick. */}
-            <p className="m-0 flex flex-wrap items-baseline gap-2 text-ink-1">
-              <Glyph size="sm">{question.answer.glyph}</Glyph>
-              <span className="font-sans text-lg text-ink-0">
-                {question.answer.romaji}
-              </span>
-            </p>
+          <p className="m-0 flex flex-wrap items-baseline gap-2 text-ink-1">
+            <Glyph size="sm">{question.answer.glyph}</Glyph>
+            <span className="font-sans text-lg text-ink-0">
+              {question.answer.romaji}
+            </span>
+          </p>
 
-            <ExampleWords character={question.answer} />
-          </div>
-
-          <Button variant="primary" onClick={onNext} autoFocus>
-            {isLast ? 'See how you did' : 'Next'}
-          </Button>
+          <ExampleWords character={question.answer} />
         </div>
       )}
     </div>

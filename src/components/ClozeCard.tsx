@@ -3,7 +3,7 @@ import { alsoCorrect } from '../lib/cloze'
 import { BLANK } from '../types/grammar'
 import { Verdict } from './ChoiceFeedback'
 import { optionButtonClasses } from './optionStyles'
-import { Button, Glyph, Label } from './ui/primitives'
+import { Glyph, Label } from './ui/primitives'
 
 /**
  * One cloze question: a sentence with a hole in it, its meaning, and four forms
@@ -23,15 +23,11 @@ export function ClozeCard({
   question,
   chosen,
   onChoose,
-  onNext,
-  isLast,
 }: {
   question: ClozeQuestion
   /** `null` until the learner commits to an answer. */
   chosen: string | null
   onChoose: (option: string) => void
-  onNext: () => void
-  isLast: boolean
 }) {
   const answered = chosen !== null
   const { item } = question
@@ -94,33 +90,28 @@ export function ClozeCard({
         })}
       </ul>
 
+      {/* aria-live so the verdict reaches a screen reader without moving focus
+          away from the option they just pressed. Navigation is a separate,
+          always-present control now, so nothing steals focus on answering. */}
       {answered && (
-        <div className="flex flex-col gap-4">
-          {/* aria-live so the verdict reaches a screen reader without moving
-              focus away from where the learner is. */}
-          <div aria-live="polite" className="flex flex-col gap-3">
-            <Verdict correct={correct} />
+        <div aria-live="polite" className="flex flex-col gap-3">
+          <Verdict correct={correct} />
 
-            <p className="m-0 font-sans text-lg text-ink-0">{item.romaji}</p>
-            <p className="m-0 max-w-prose font-sans text-ink-1">{item.note}</p>
+          <p className="m-0 font-sans text-lg text-ink-0">{item.romaji}</p>
+          <p className="m-0 max-w-prose font-sans text-ink-1">{item.note}</p>
 
-            {/*
+          {/*
               Not a rescue for a marked-wrong answer — the two halves of a pair
               are never offered together, so that cannot happen. This exists
               because the class taught both forms, and a drill that only ever
               showed one of them would quietly teach that the other is wrong.
             */}
-            {equally.length > 0 && (
-              <p className="m-0 max-w-prose font-sans text-sm text-ink-2">
-                {equally.join(' / ')} would be just as correct here — a little more
-                formal, and the same meaning.
-              </p>
-            )}
-          </div>
-
-          <Button variant="primary" onClick={onNext} autoFocus>
-            {isLast ? 'See how you did' : 'Next'}
-          </Button>
+          {equally.length > 0 && (
+            <p className="m-0 max-w-prose font-sans text-sm text-ink-2">
+              {equally.join(' / ')} would be just as correct here — a little more
+              formal, and the same meaning.
+            </p>
+          )}
         </div>
       )}
     </div>

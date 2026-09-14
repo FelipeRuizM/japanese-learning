@@ -21,6 +21,10 @@ import { usePronunciation } from '../lib/usePronunciation'
 import { GridCell, GridGap } from '../components/GridCell'
 import { SoundCell } from '../components/SoundCell'
 import { SetPicker } from '../components/SetPicker'
+import { StepNav } from '../components/StepNav'
+import { MarkWrong } from '../components/MarkWrong'
+import { RoundSummary } from '../components/RoundSummary'
+import { PassSummary } from '../components/PassSummary'
 import { ScopePicker } from '../components/ScopePicker'
 import { RoundSizePicker } from '../components/RoundSizePicker'
 import { useVocabScope } from '../lib/useVocabScope'
@@ -146,17 +150,7 @@ function VocabQuizCardDemo() {
   })
   if (!question) return null
 
-  return (
-    <VocabQuizCard
-      question={question}
-      chosen={chosen}
-      onChoose={setChosen}
-      onNext={() => {
-        setChosen(null)
-      }}
-      isLast={false}
-    />
-  )
+  return <VocabQuizCard question={question} chosen={chosen} onChoose={setChosen} />
 }
 
 /**
@@ -174,15 +168,7 @@ function NumberCardDemo() {
 
   return (
     <div className="flex flex-col gap-3">
-      <NumberCard
-        question={question}
-        chosen={chosen}
-        onChoose={setChosen}
-        onNext={() => {
-          setChosen(null)
-        }}
-        isLast={false}
-      />
+      <NumberCard question={question} chosen={chosen} onChoose={setChosen} />
       <p className="m-0 max-w-prose text-sm text-ink-2">
         Pinned to 20 years old, because はたち is the one age that drops さい entirely —
         and にじゅうさい, the form a learner writes before they know that, is one of the
@@ -207,15 +193,7 @@ function ClozeCardDemo() {
 
   return (
     <div className="flex flex-col gap-3">
-      <ClozeCard
-        question={question}
-        chosen={chosen}
-        onChoose={setChosen}
-        onNext={() => {
-          setChosen(null)
-        }}
-        isLast={false}
-      />
+      <ClozeCard question={question} chosen={chosen} onChoose={setChosen} />
       <p className="m-0 max-w-prose text-sm text-ink-2">
         The meaning sits with the QUESTION, not the reveal: without it,
         わたし＿がくせいです takes は for &ldquo;I am a student&rdquo; and の for
@@ -269,15 +247,7 @@ function QuizDemo() {
 
   return (
     <div className="flex flex-col gap-4">
-      <QuizCard
-        question={question}
-        chosen={chosen}
-        onChoose={setChosen}
-        onNext={() => {
-          setChosen(null)
-        }}
-        isLast={false}
-      />
+      <QuizCard question={question} chosen={chosen} onChoose={setChosen} />
       <p className="m-0 max-w-prose text-sm text-ink-2">
         Answer it to see the feedback state. Right and wrong are separated by lightness,
         and each carries a word and a mark — colour is never the only channel. Semantic
@@ -295,6 +265,19 @@ function LivePronunciation() {
       <SpeakButton subject={speakable(SAMPLE)} status={status} onSpeak={speak} />
       <Label>status: {status}</Label>
     </div>
+  )
+}
+
+/** Live: a toggle that cannot be pressed shows only half of what it does. */
+function MarkWrongDemo() {
+  const [marked, setMarked] = useState(false)
+  return (
+    <MarkWrong
+      marked={marked}
+      onToggle={() => {
+        setMarked((m) => !m)
+      }}
+    />
   )
 }
 
@@ -529,6 +512,73 @@ export function Styleguide() {
           registered it renders nothing at all, because a picker offering one choice is
           furniture. The pressed state is the same ground-on-accent inversion a selected
           cell uses: the picker and the chart under it are saying the same thing.
+        </p>
+      </Section>
+
+      <Section title="Step nav">
+        <StepNav
+          label="Demo"
+          nextLabel="Next"
+          onPrevious={() => undefined}
+          onNext={() => undefined}
+          canGoBack={false}
+        />
+        <StepNav
+          label="Demo, last step"
+          nextLabel="See how you did"
+          onPrevious={() => undefined}
+          onNext={() => undefined}
+          canGoBack
+          canGoNext={false}
+        />
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          Previous and Next, for anything you page through. The quizzes moved their
+          &ldquo;Next&rdquo; out of the card to get here: it used to live inside the
+          reveal, so it existed only once a question was answered &mdash; leaving
+          nowhere for a Previous to go, and no way back off an unanswered question at
+          all. Next is <em>disabled</em> rather than hidden while a question is
+          unanswered, because a control that vanishes reads as &ldquo;this screen has no
+          next&rdquo;.
+        </p>
+      </Section>
+
+      <Section title="Marking a card wrong">
+        <MarkWrongDemo />
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          One-sided on purpose: every flashcard counts as right unless you say
+          otherwise, because nobody will grade forty-four cards they knew. So there is
+          no &ldquo;I got it right&rdquo; control and no unset third state. It is an{' '}
+          <em>accent</em>
+          toggle rather than a red one &mdash; semantic colour is reserved for quiz
+          feedback and may never fill (&sect;7) &mdash; and what makes it mean{' '}
+          <em>wrong</em> is the word on it, which is also the channel that survives a
+          colour-blind reader.
+        </p>
+      </Section>
+
+      <Section title="Round and pass summaries">
+        <RoundSummary
+          score={3}
+          total={5}
+          missed={2}
+          onRetry={() => undefined}
+          onAgain={() => undefined}
+          perfect="Every one."
+        />
+        <Rule />
+        <PassSummary
+          total={5}
+          marked={2}
+          onRedo={() => undefined}
+          onAgain={() => undefined}
+        />
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          The retry is the primary action when there is one, and &ldquo;Go again&rdquo;
+          steps down to quiet: someone who just missed two has a more useful next move
+          than re-drawing a whole round, and the count belongs in the label because two
+          is a different decision from twenty. The pass summary&rsquo;s big number is
+          what you did <em>not</em> mark &mdash; marking is one-sided, so showing the
+          marked count large would read as a score where bigger is worse.
         </p>
       </Section>
 

@@ -1,7 +1,7 @@
 import type { VocabEntry } from '../types/vocab'
 import type { VocabQuizQuestion } from '../lib/vocabQuiz'
 import { vocabDisplayValue } from '../lib/vocabQuiz'
-import { Button, Glyph, Label } from './ui/primitives'
+import { Glyph, Label } from './ui/primitives'
 import { Verdict } from './ChoiceFeedback'
 import { optionButtonClasses } from './optionStyles'
 
@@ -24,15 +24,11 @@ export function VocabQuizCard({
   question,
   chosen,
   onChoose,
-  onNext,
-  isLast,
 }: {
   question: VocabQuizQuestion
   /** `null` until the learner commits to an answer. */
   chosen: VocabEntry | null
   onChoose: (option: VocabEntry) => void
-  onNext: () => void
-  isLast: boolean
 }) {
   const answered = chosen !== null
   const correct = chosen?.item.id === question.answer.item.id
@@ -83,37 +79,32 @@ export function VocabQuizCard({
         })}
       </ul>
 
+      {/* aria-live so the verdict reaches a screen reader without moving focus
+          away from the option they just pressed. Navigation is a separate,
+          always-present control now, so nothing steals focus on answering. */}
       {answered && (
-        <div className="flex flex-col gap-4">
-          {/* aria-live so the verdict reaches a screen reader without moving
-              focus away from where the learner is. */}
-          <div aria-live="polite" className="flex flex-col gap-3">
-            <Verdict correct={correct} />
+        <div aria-live="polite" className="flex flex-col gap-3">
+          <Verdict correct={correct} />
 
-            {/* The answer is always restated, even when they got it right —
+          {/* The answer is always restated, even when they got it right —
                 reading it back is what makes the pairing stick. */}
-            <p className="m-0 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-ink-1">
-              <Glyph size="sm">{item.kana}</Glyph>
-              <span className="font-sans text-lg text-ink-0">{item.romaji}</span>
-              <span className="font-sans text-ink-1">{item.english}</span>
+          <p className="m-0 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-ink-1">
+            <Glyph size="sm">{item.kana}</Glyph>
+            <span className="font-sans text-lg text-ink-0">{item.romaji}</span>
+            <span className="font-sans text-ink-1">{item.english}</span>
+          </p>
+
+          {item.note !== undefined && (
+            <p className="m-0 font-sans text-sm text-ink-2">{item.note}</p>
+          )}
+
+          {item.example !== undefined && (
+            <p className="m-0 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <Glyph size="sm">{item.example.kana}</Glyph>
+              <span className="font-sans text-ink-1">{item.example.romaji}</span>
+              <span className="font-sans text-ink-2">— {item.example.english}</span>
             </p>
-
-            {item.note !== undefined && (
-              <p className="m-0 font-sans text-sm text-ink-2">{item.note}</p>
-            )}
-
-            {item.example !== undefined && (
-              <p className="m-0 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <Glyph size="sm">{item.example.kana}</Glyph>
-                <span className="font-sans text-ink-1">{item.example.romaji}</span>
-                <span className="font-sans text-ink-2">— {item.example.english}</span>
-              </p>
-            )}
-          </div>
-
-          <Button variant="primary" onClick={onNext} autoFocus>
-            {isLast ? 'See how you did' : 'Next'}
-          </Button>
+          )}
         </div>
       )}
     </div>

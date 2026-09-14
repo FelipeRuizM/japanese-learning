@@ -202,3 +202,191 @@ describe('the quiz', () => {
     expect(new Set(shown).size).toBe(4)
   })
 })
+
+/* ------------------------------------------------------------------------- */
+
+/** Answer the question on screen, deliberately right or deliberately wrong. */
+async function answer(
+  user: ReturnType<typeof userEvent.setup>,
+  how: 'right' | 'wrong',
+) {
+  const want = expectedLabel(currentAnswer())
+  const pick = options().find((o) =>
+    how === 'right'
+      ? o.getAttribute('aria-label') === want
+      : o.getAttribute('aria-label') !== want,
+  )
+  if (!pick) throw new Error(`no ${how} option on screen`)
+  await user.click(pick)
+}
+
+const step = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+  await user.click(screen.getByRole('button', { name }))
+}
+
+describe('paging back and forth', () => {
+  it('cannot advance until the question is answered', async () => {
+    const user = userEvent.setup()
+    renderQuiz()
+    await selectRow(user, 'K')
+
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+    await answer(user, 'right')
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
+  })
+
+  it('cannot go back from the first question', async () => {
+    const user = userEvent.setup()
+    renderQuiz()
+    await selectRow(user, 'K')
+
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+  })
+
+  /**
+   * GOING BACK IS REVIEW, NOT A SECOND ATTEMPT. The options stay locked and the
+   * verdict stays as it was, so the score keeps meaning the round you actually
+   * did rather than the round you repaired (CLAUDE.md §5).
+   */
+  it('shows an earlier question with its answer, locked', async () => {
+    const user = userEvent.setup()
+    renderQuiz()
+    await selectRow(user, 'K')
+
+    const first = currentAnswer()
+    await answer(user, 'wrong')
+    await step(user, 'Next')
+    expect(screen.getByText('Question 2 of 5')).toBeInTheDocument()
+
+    await step(user, 'Previous')
+
+    expect(screen.getByText('Question 1 of 5')).toBeInTheDocument()
+    expect(currentAnswer()).toStrictEqual(first)
+    expect(screen.getByText('Not quite')).toBeInTheDocument()
+    for (const option of options()) expect(option).toBeDisabled()
+  })
+
+  it('says you are reviewing, rather than leaving it to be inferred', async () => {
+    const user = userEvent.setup()
+    renderQuiz()
+    await selectRow(user, 'K')
+
+    expect(screen.queryByText('Reviewing')).toBeNull()
+    await answer(user, 'right')
+    // Still not reviewing: you are looking at the result of what you just did.
+    expect(screen.queryByText('Reviewing')).toBeNull()
+
+    await step(user, 'Next')
+    await answer(user, 'right')
+    await step(user, 'Previous')
+    expect(screen.getByText('Reviewing')).toBeInTheDocument()
+  })
+
+  it('keeps the score unchanged across a walk back and forward', async () => {
+    const user = userEvent.setup()
+    renderQuiz()
+    await selectRow(user, 'K')
+
+    await answer(user, 'right')
+    await step(user, 'Next')
+    await answer(user, 'wrong')
+    expect(screen.getByText('1 correct')).toBeInTheDocument()
+
+    await step(user, 'Previous')
+    await step(user, 'Next')
+    expect(screen.getByText('1 correct')).toBeInTheDocument()
+  })
+})
+
+describe('retrying what you missed', () => {
+  /** Answer every question in the round, missing exactly `wrong` of them. */
+  async function walk(user: ReturnType<typeof userEvent.setup>, wrong: number) {
+    for (let i = 0; i < 5; i++) {
+      await answer(user, i < wrong ? 'wrong' : 'right')
+      await step(user, i === 4 ? 'See how you did' : 'Next')
+    }
+  }
+
+  it('offers a retry naming how many there are', async () => {
+    const user = userEvent.setup()
+    renderQuiz()
+    await selectRow(user, 'K')
+    await walk(user, 2)
+
+    expect(screen.getByText('3 / 5')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Retry the 2 you missed' }),
+    ).toBeInTheDocument()
+  })
+
+  it('offers no retry when nothing was missed', async () => {
+    const user = userEvent.setup()
+    renderQuiz()
+    await selectRow(user, 'K')
+    await walk(user, 0)
+
+    expect(screen.getByText('5 / 5')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Retry/ })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Go again' })).toBeInTheDocument()
+  })
+
+  it('builds the retry round from exactly the missed characters', async () => {
+    const user = userEvent.setup()
+    renderQuiz()
+    await selectRow(user, 'K')
+
+    const missed: string[] = []
+    for (let i = 0; i < 5; i++) {
+      if (i < 2) missed.push(currentAnswer().id)
+      await answer(user, i < 2 ? 'wrong' : 'right')
+      await step(user, i === 4 ? 'See how you did' : 'Next')
+    }
+
+    await step(user, 'Retry the 2 you missed')
+
+    expect(screen.getByText('Question 1 of 2')).toBeInTheDocument()
+    const asked = [currentAnswer().id]
+    await answer(user, 'right')
+    await step(user, 'Next')
+    asked.push(currentAnswer().id)
+
+    expect([...asked].sort()).toEqual([...missed].sort())
+  })
+
+  it('goes back to the full round on Go again', async () => {
+    const user = userEvent.setup()
+    renderQuiz()
+    await selectRow(user, 'K')
+    await walk(user, 2)
+    await step(user, 'Retry the 2 you missed')
+    expect(screen.getByText('Question 1 of 2')).toBeInTheDocument()
+
+    await answer(user, 'right')
+    await step(user, 'Next')
+    await answer(user, 'right')
+    await step(user, 'See how you did')
+    await step(user, 'Go again')
+
+    expect(screen.getByText('Question 1 of 5')).toBeInTheDocument()
+  })
+
+  /**
+   * A retry subset must not outlive the deck it came from. Without the tag on
+   * the stored retry, changing the selection mid-retry leaves you answering
+   * characters you have just deselected — which looks like a data bug and is
+   * really a stale-state one.
+   */
+  it('drops a pending retry when the deck changes', async () => {
+    const user = userEvent.setup()
+    renderQuiz()
+    await selectRow(user, 'K')
+    await walk(user, 2)
+    await step(user, 'Retry the 2 you missed')
+    expect(screen.getByText('Question 1 of 2')).toBeInTheDocument()
+
+    await selectRow(user, 'M')
+
+    // Ten characters, all of them — not the two that were pending.
+    expect(screen.getByText('Question 1 of 10')).toBeInTheDocument()
+  })
+})

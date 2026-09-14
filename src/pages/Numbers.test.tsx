@@ -190,3 +190,88 @@ describe('The numbers drill', () => {
     ).toBeInTheDocument()
   })
 })
+
+/* ------------------------------------------------------------------------- */
+
+const step = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+  await user.click(screen.getByRole('button', { name }))
+}
+
+/**
+ * Answer every question by position, counting how many came back wrong.
+ *
+ * Answering by position means the number missed is whatever it is, which is the
+ * point: this file tests the WIRING of retry and review, not the readings. The
+ * shared state behind both lives in `useQuizRound` and is exercised in detail
+ * through the kana quiz, where a question's right answer can be identified.
+ */
+async function walkRound(user: ReturnType<typeof userEvent.setup>) {
+  let missed = 0
+  for (let i = 0; i < ROUND_LENGTH; i++) {
+    await user.click(firstOption())
+    if (screen.queryByText('Not quite') !== null) missed++
+    await step(user, i === ROUND_LENGTH - 1 ? 'See how you did' : 'Next')
+  }
+  return missed
+}
+
+describe('paging back and forth', () => {
+  it('blocks Next until the question is answered', async () => {
+    const user = userEvent.setup()
+    show()
+
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+    await user.click(firstOption())
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled()
+  })
+
+  it('cannot go back from the first question', () => {
+    show()
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
+  })
+
+  /** Going back is review: the options stay locked and the verdict stands. */
+  it('reopens an earlier question read-only', async () => {
+    const user = userEvent.setup()
+    show()
+
+    await user.click(firstOption())
+    await step(user, 'Next')
+    expect(screen.getByText('Question 2 of ' + ROUND_LENGTH)).toBeInTheDocument()
+
+    await step(user, 'Previous')
+    expect(screen.getByText('Question 1 of ' + ROUND_LENGTH)).toBeInTheDocument()
+    expect(screen.getByText('Reviewing')).toBeInTheDocument()
+    for (const option of optionButtons()) expect(option).toBeDisabled()
+  })
+})
+
+describe('retrying what you missed', () => {
+  it('offers a retry sized to what was actually missed', async () => {
+    const user = userEvent.setup()
+    show()
+    const missed = await walkRound(user)
+
+    expect(screen.getByText('Round complete')).toBeInTheDocument()
+
+    if (missed === 0) {
+      expect(screen.queryByRole('button', { name: /Retry/ })).toBeNull()
+      return
+    }
+
+    const retry = screen.getByRole('button', {
+      name: `Retry the ${missed} you missed`,
+    })
+    await user.click(retry)
+    expect(screen.getByText(`Question 1 of ${missed}`)).toBeInTheDocument()
+  }, 30000)
+
+  it('returns to a full round on Go again', async () => {
+    const user = userEvent.setup()
+    show()
+    await walkRound(user)
+    await step(user, 'Go again')
+
+    expect(screen.getByText(`Question 1 of ${ROUND_LENGTH}`)).toBeInTheDocument()
+  }, 30000)
+})

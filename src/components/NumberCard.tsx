@@ -1,7 +1,7 @@
 import type { NumberQuestion } from '../lib/numbers'
 import { Verdict } from './ChoiceFeedback'
 import { optionButtonClasses } from './optionStyles'
-import { Button, Glyph, Label } from './ui/primitives'
+import { Glyph, Label } from './ui/primitives'
 
 const ASKED = {
   count: 'How do you say this number?',
@@ -27,15 +27,11 @@ export function NumberCard({
   question,
   chosen,
   onChoose,
-  onNext,
-  isLast,
 }: {
   question: NumberQuestion
   /** `null` until the learner commits to an answer. */
   chosen: string | null
   onChoose: (option: string) => void
-  onNext: () => void
-  isLast: boolean
 }) {
   const answered = chosen !== null
   const { prompt } = question
@@ -82,24 +78,19 @@ export function NumberCard({
         })}
       </ul>
 
+      {/* aria-live so the verdict reaches a screen reader without moving focus
+          away from the option they just pressed. Navigation is a separate,
+          always-present control now, so nothing steals focus on answering. */}
       {answered && (
-        <div className="flex flex-col gap-4">
-          {/* aria-live so the verdict reaches a screen reader without moving
-              focus away from where the learner is. */}
-          <div aria-live="polite" className="flex flex-col gap-3">
-            <Verdict correct={correct} />
+        <div aria-live="polite" className="flex flex-col gap-3">
+          <Verdict correct={correct} />
 
-            {/* Always restated, even when they got it right — reading it back
+          {/* Always restated, even when they got it right — reading it back
                 is what makes the pairing stick. */}
-            <p className="m-0 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-ink-1">
-              <span className="font-sans text-lg text-ink-0">{prompt.label}</span>
-              <Glyph size="sm">{prompt.reading}</Glyph>
-            </p>
-          </div>
-
-          <Button variant="primary" onClick={onNext} autoFocus>
-            {isLast ? 'See how you did' : 'Next'}
-          </Button>
+          <p className="m-0 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-ink-1">
+            <span className="font-sans text-lg text-ink-0">{prompt.label}</span>
+            <Glyph size="sm">{prompt.reading}</Glyph>
+          </p>
         </div>
       )}
     </div>

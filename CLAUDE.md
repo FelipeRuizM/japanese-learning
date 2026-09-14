@@ -4,10 +4,15 @@
 It is the durable spec. `PLAN.md` holds the phased build order.
 
 > **Status — 2026-09-14. Kana curriculum complete at v2.1; the course companion is
-> under way at v3.0.** The first pillar is finished — all seven phases, all five
+> under way at v3.1.** The first pillar is finished — all seven phases, all five
 > features in §1, plus two added afterwards on request (the pronunciation chart and
 > writing practice), the **dakuten/handakuten rows**, and **katakana**. It teaches
 > **142 characters across two scripts**.
+>
+> **v3.1 gave every drill back-and-forth paging and a retry (§5, §6).** Four quizzes
+> share `useQuizRound`; both flashcard screens share `useCardPass`. Going back is
+> REVIEW, never a second attempt. Flashcards gained a one-sided "mark wrong", and every
+> summary offers a round over just what you missed.
 >
 > **v3.0 is the dashboard shell (§5).** Pillars on the left, the open pillar's
 > activities above the content, and the URLs nested to match — `#/kana/quiz`,
@@ -567,7 +572,27 @@ drill a two-script app exists to offer. The consequence is that a summary sittin
 
 ### Flashcards
 
-- The deck, shuffled once per visit. Next / previous, and position ("7 of 15").
+- The deck, shuffled once per visit. Next / previous, and position ("7 of 15"). The last
+  card offers the **summary** rather than a disabled Next — a dead end there is what
+  would make a redo pass unreachable.
+
+- **MARKING IS ONE-SIDED: every card counts as right unless you say otherwise.** Nobody
+  will grade forty-four cards they knew, so the only control is "I got that wrong" and
+  there is no unset third state. `src/lib/useCardPass.ts` holds it, for both flashcard
+  screens.
+  - Marks are held **by id, not by position**, so paging back shows a card still marked.
+  - The control is **always on screen**, not only after the reveal: paging back has to
+    show whether a card is marked, and a control that appeared only once flipped would
+    hide that until you flipped it again.
+  - It is an **accent toggle, not a red one**. Semantic colour is reserved for quiz
+    feedback and may never fill (§7); what makes it mean _wrong_ is the word on it,
+    which is also the channel that survives a colour-blind reader.
+  - The summary's big number is **what you did not mark**. Showing the marked count
+    large would read as a score where bigger is worse, and the screen states the
+    assumption rather than leaving it to be inferred from a discrepancy.
+  - **A redo pass can itself be marked**, so it narrows each time rather than being one
+    second chance. Marks do not carry into it.
+
 - **Front:** the glyph, very large, and nothing else.
 - **Click flips.** The flip **plays the audio and reveals** the romaji and the example
   words with their romaji and English. A replay control sits with them. Flipping _back_
@@ -634,6 +659,36 @@ unit-tested. The UI renders what it returns and holds no question logic.
   progress tracking (§10).
 - On answering, the correct option is marked, the **example word is revealed**, and the
   audio plays.
+
+### Paging, review and retry — all four quizzes
+
+`src/lib/useQuizRound.ts` holds the state every round has, and all four drills use it.
+Four byte-identical copies of `index`, `chosen`, `score` and `next` were tolerable while
+they did nothing; they stopped being tolerable the moment all four had to grow an answer
+history. It is a HOOK, not a component, which is the same split `ChoiceFeedback` makes:
+what the four genuinely differ in is the prompt and the options.
+
+- **`StepNav` is always on screen, and Next is disabled until the question is answered.**
+  The Next button used to live inside the reveal, so it existed only once you had
+  answered — which left nowhere for a Previous to go and no way back off an unanswered
+  question at all. Disabled rather than hidden: a control that vanishes reads as "this
+  screen has no next".
+- **GOING BACK IS REVIEW, NOT A SECOND ATTEMPT.** The options stay locked, the verdict
+  stands, and the score cannot move. A score you can page back and repair stops being a
+  reading of the round you actually did.
+- **`isReview` is not `chosen !== null`.** One is a result you are being shown, the other
+  one you are re-reading, and the header says "Reviewing" only for the second. The flag
+  tracking it is **cleared by every move** — setting it on answering and never clearing
+  it makes "forward then straight back" look like answering, because the index matches
+  again. A test on the numbers drill caught exactly that, one step off the path the kana
+  quiz test happened to take.
+- **A retry asks the missed items as NEW questions**, distractors redrawn and the
+  direction re-rolled. Replaying the identical question can be answered from where the
+  right option sat last time, which tests recall of a layout. **The distractor pool stays
+  the whole deck**, so a retry over three items is not three items shown to each other.
+- **A retry subset is tagged with the deck or scope it came from** and discarded when
+  that changes. Without the tag, changing the selection mid-retry leaves you answering
+  things you just deselected — which looks like a data bug and is a stale-state one.
 
 ---
 
@@ -767,6 +822,14 @@ kept current. **A component that is not in the styleguide is not done.**
     from the whole scope, and exactly one option pressed as the scope narrows
   - writing practice — the prompt names the right script, and **no glyph reaches the
     replay control's accessible name**
+  - the round state — Next blocked until answered, Previous blocked on the first,
+    going back reopens a question READ-ONLY with its verdict, the score unchanged by a
+    walk back and forward, and "Reviewing" shown only when re-reading
+  - the retry — sized to what was actually missed, built from exactly those items, no
+    retry offered on a clean round, and a pending retry DROPPED when the deck or scope
+    changes
+  - card marking — one-sided, remembered by id across paging, the summary scoring the
+    UNMARKED cards, and a redo pass covering exactly the marked ones with marks cleared
   - the deck reducer — toggle, select row, select all, clear
   - `speechProvider` against a stubbed `speechSynthesis`, including the empty-first-call
     race and the no-Japanese-voice path
@@ -823,6 +886,12 @@ src/
 Do not build these, and do not sneak them in as a "small addition":
 
 - **Progress tracking.** No per-character accuracy, no history, no stats page.
+
+  > **Marking a flashcard wrong is NOT this, and the distinction is where the line
+  > sits.** A mark is a note about the pass you are in the middle of — which cards to
+  > come back to before you leave this screen. It lives in component state, dies with
+  > the route, and is never keyed to a character across rounds. The moment a mark
+  > survived a refresh it would be exactly the prohibited thing.
 - **Spaced repetition.** No scheduling, no intervals, no leech detection.
 - **Persistence of any kind.** No `localStorage`, no `sessionStorage`, no IndexedDB, no
   cookies, no URL-encoded deck state, no backend.

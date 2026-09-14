@@ -249,7 +249,10 @@ describe('Vocabulary flashcards', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: `Card ${total} of ${total}` }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+    // The last card offers the summary rather than a disabled Next — that is
+    // what makes a redo pass over the marked cards reachable at all.
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'See how you did' })).toBeInTheDocument()
   })
 
   /*
@@ -680,4 +683,120 @@ describe('the round size picker', () => {
       expect(pressed, `after turning off ${topic.label}`).toHaveLength(1)
     }
   }, 20000)
+})
+
+/* ------------------------------------------------------------------------- */
+
+const stepTo = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+  await user.click(screen.getByRole('button', { name }))
+}
+
+const mark = () => screen.getByRole('button', { name: /^(Mark wrong|Marked wrong)$/ })
+
+/** Narrow the scope to one small topic, so a pass is a handful of cards. */
+async function pickOneTopic(user: ReturnType<typeof userEvent.setup>) {
+  const set = firstSet()
+  const keep = set.groups.find((g) => g.items.length === 2)
+  if (!keep) throw new Error('no two-item topic to narrow to')
+
+  await user.click(weekToggle(set)) // clear the week
+  await user.click(topicToggle(keep.label, set))
+  return keep
+}
+
+describe('marking vocabulary cards', () => {
+  it('marks the card and counts it', async () => {
+    const user = userEvent.setup()
+    show()
+    await pickOneTopic(user)
+
+    expect(mark()).toHaveAttribute('aria-pressed', 'false')
+    await user.click(mark())
+    expect(mark()).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('1 marked')).toBeInTheDocument()
+  })
+
+  it('redoes exactly the marked cards, with the marks cleared', async () => {
+    const user = userEvent.setup()
+    show()
+    const topic = await pickOneTopic(user)
+    expect(screen.getByText(`Card 1 of ${topic.items.length}`)).toBeInTheDocument()
+
+    await user.click(mark())
+    await stepTo(user, 'Next')
+    await stepTo(user, 'See how you did')
+
+    expect(screen.getByText('Pass complete')).toBeInTheDocument()
+    expect(
+      screen.getByText(`${topic.items.length - 1} / ${topic.items.length}`),
+    ).toBeInTheDocument()
+
+    await stepTo(user, 'Redo the 1 you marked')
+    expect(screen.getByText('Card 1 of 1')).toBeInTheDocument()
+    expect(mark()).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  /** A redo subset must not outlive the selection it was drawn from. */
+  it('drops a pending redo when the scope changes', async () => {
+    const user = userEvent.setup()
+    show()
+    const topic = await pickOneTopic(user)
+
+    await user.click(mark())
+    await stepTo(user, 'Next')
+    await stepTo(user, 'See how you did')
+    await stepTo(user, 'Redo the 1 you marked')
+    expect(screen.getByText('Card 1 of 1')).toBeInTheDocument()
+
+    // Turn ANOTHER topic on. The week toggle would not do here: it reads as
+    // mixed with one topic selected, and mixed CLEARS rather than fills.
+    const extra = firstSet().groups.find((g) => g.label !== topic.label)
+    if (!extra) throw new Error('the week has only one topic')
+    await user.click(topicToggle(extra.label, firstSet()))
+
+    expect(
+      screen.getByText(`Card 1 of ${topic.items.length + extra.items.length}`),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('the vocabulary quiz round', () => {
+  it('blocks Next until answered, and reviews when you go back', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
+    const first = optionButtons()[0]
+    if (!first) throw new Error('no options')
+    await user.click(first)
+
+    await stepTo(user, 'Next')
+    await stepTo(user, 'Previous')
+
+    expect(screen.getByText('Reviewing')).toBeInTheDocument()
+    for (const option of optionButtons()) expect(option).toBeDisabled()
+  })
+
+  /**
+   * A RETRY IGNORES THE ROUND LENGTH. You asked for the ones you missed, so it
+   * is all of them — not the first ten of them.
+   */
+  it('retries every missed question, whatever the round length', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+    await user.click(screen.getByRole('button', { name: '5' }))
+
+    const { correct } = await walkRound(user)
+    const missed = 5 - correct
+
+    if (missed === 0) {
+      expect(screen.queryByRole('button', { name: /Retry/ })).toBeNull()
+      return
+    }
+
+    await stepTo(user, `Retry the ${missed} you missed`)
+    expect(screen.getByText(`Question 1 of ${missed}`)).toBeInTheDocument()
+  })
 })
