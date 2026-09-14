@@ -541,8 +541,12 @@ export function Styleguide() {
           real <code>aria-pressed</code> value and gets its own treatment, an outline
           and a wash rather than a fill: a &ldquo;select the whole week&rdquo; control
           with half its topics on is neither pressed nor unpressed, and saying either
-          would make the button lie. <code>sm</code> is for a long row of them; the 44px
-          hit target does not change.
+          would make the button lie. <code>sm</code> is not merely smaller: it{' '}
+          <em>washes</em> where <code>md</code> <em>fills</em>. Eleven topic toggles,
+          all on, rendered as eleven solid blocks brighter than the glyph beneath them,
+          which &sect;7 forbids outright. Reserving the fill for the primary tier also
+          makes a week toggle read as the level above its topics rather than as another
+          one of them. The 44px hit target is unchanged.
         </p>
       </Section>
 

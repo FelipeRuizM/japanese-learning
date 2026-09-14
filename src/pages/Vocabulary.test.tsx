@@ -458,10 +458,29 @@ describe('Vocabulary quiz', () => {
 
 /* ------------------------------------------------------------------------- */
 
-const topicToggle = (label: string) => screen.getByRole('button', { name: label })
+/**
+ * SCOPED TO THE PICKER, and it has to be — the same でんわ / "Phone" collision
+ * that bit the card tests, in a second place.
+ *
+ * でんわ means "Phone" and its topic is labelled "Phone", so in quiz mode a
+ * kana→English question that happens to offer でんわ puts a SECOND button named
+ * "Phone" on the page. An unscoped `getByRole` then throws "found multiple
+ * elements" — on the fraction of shuffles that deal that one item, in the full
+ * suite, with a message that says nothing about why.
+ *
+ * The scope picker's week row is a `group` named for the week, so that is the
+ * boundary. This is the third time one datum has forced a query to be scoped;
+ * the lesson is not about でんわ, it is that a vocabulary meaning and a topic
+ * label are drawn from overlapping vocabularies and always could collide.
+ */
+const pickerFor = (set: VocabSet) =>
+  within(screen.getByRole('group', { name: set.label }))
+
+const topicToggle = (label: string, set: VocabSet) =>
+  pickerFor(set).getByRole('button', { name: label })
 
 const weekToggle = (set: VocabSet) =>
-  screen.getByRole('button', { name: `All of ${set.label}` })
+  pickerFor(set).getByRole('button', { name: `All of ${set.label}` })
 
 const cardCount = () => {
   const heading = screen.getByRole('heading', { level: 2, name: /^Card \d+ of \d+$/ })
@@ -493,9 +512,12 @@ describe('the scope picker', () => {
     const topic = firstSet().groups[0]
     if (!topic) throw new Error('the week has no topics')
 
-    await user.click(topicToggle(topic.label))
+    await user.click(topicToggle(topic.label, firstSet()))
 
-    expect(topicToggle(topic.label)).toHaveAttribute('aria-pressed', 'false')
+    expect(topicToggle(topic.label, firstSet())).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
     expect(weekToggle(firstSet())).toHaveAttribute('aria-pressed', 'mixed')
   })
 
@@ -506,7 +528,7 @@ describe('the scope picker', () => {
     if (!topic) throw new Error('the week has no topics')
     const before = cardCount()
 
-    await user.click(topicToggle(topic.label))
+    await user.click(topicToggle(topic.label, firstSet()))
 
     expect(cardCount()).toBe(before - topic.items.length)
   })
@@ -528,7 +550,7 @@ describe('the scope picker', () => {
       screen.getByRole('heading', { level: 2, name: /^Card 3 of / }),
     ).toBeInTheDocument()
 
-    await user.click(topicToggle(topic.label))
+    await user.click(topicToggle(topic.label, firstSet()))
 
     expect(
       screen.getByRole('heading', { level: 2, name: /^Card 1 of / }),
@@ -542,7 +564,7 @@ describe('the scope picker', () => {
     const topic = firstSet().groups[0]
     if (!topic) throw new Error('the week has no topics')
 
-    await user.click(topicToggle(topic.label))
+    await user.click(topicToggle(topic.label, firstSet()))
     expect(weekToggle(firstSet())).toHaveAttribute('aria-pressed', 'mixed')
 
     await user.click(weekToggle(firstSet()))
@@ -650,7 +672,7 @@ describe('the round size picker', () => {
     await enterQuiz(user)
 
     for (const topic of firstSet().groups.slice(0, 9)) {
-      await user.click(topicToggle(topic.label))
+      await user.click(topicToggle(topic.label, firstSet()))
       const options = within(
         screen.getByRole('group', { name: 'Questions' }),
       ).getAllByRole('button')

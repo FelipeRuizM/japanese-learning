@@ -3,6 +3,7 @@ import { allCharacters } from '../characters/registry'
 import { useDeck } from '../data/useDeck'
 import { hasAll } from '../data/deck'
 import { Button, ButtonLink, Chip } from './ui/primitives'
+import { PATHS } from '../routes'
 
 /**
  * What is in the deck, and what to do with it.
@@ -54,10 +55,10 @@ export function DeckSummary({ set }: { set: CharacterSet }) {
 
       {deck.count > 0 && (
         <div className="flex flex-wrap items-center gap-3">
-          <ButtonLink to="/flashcards" variant="primary">
+          <ButtonLink to={PATHS.flashcards} variant="primary">
             Study {deck.count} as flashcards
           </ButtonLink>
-          <ButtonLink to="/quiz">Quiz me</ButtonLink>
+          <ButtonLink to={PATHS.quiz}>Quiz me</ButtonLink>
         </div>
       )}
     </div>

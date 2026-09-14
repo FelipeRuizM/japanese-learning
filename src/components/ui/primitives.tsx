@@ -155,10 +155,33 @@ export function Toggle({
   /** `sm` for a long list of them. The 44px hit target is unchanged (§5). */
   size?: 'sm' | 'md'
 }) {
-  const states = {
+  /**
+   * THE SOLID FILL IS RESERVED FOR `md`, AND THAT IS NOT A SIZE DECISION.
+   *
+   * Eleven topic toggles, all on by default, rendered as eleven solid indigo
+   * blocks — and the glyph they sat above was dimmer than every one of them.
+   * "The glyph is the largest and brightest thing on screen, always. Chrome
+   * recedes" (§7) is not a preference, and a wall of filled chrome breaks it no
+   * matter how correct each individual chip is.
+   *
+   * So `md` fills and `sm` washes: the accent as text on `accent-soft`, 6.20:1,
+   * clear of AA. The second effect is the one the markup was already trying to
+   * express and failing — a week toggle beside its topics now READS as the
+   * level above them, where two rows of identical fills read as one list.
+   *
+   * Only jsdom-blind review let this ship in the first place: every test passed,
+   * every state was correct, and the page was still wrong. Look at it.
+   */
+  const fill = {
     true: 'border-accent bg-accent text-ground',
     mixed: 'border-accent bg-accent-soft text-ink-0',
     false: 'border-rule bg-transparent text-ink-1 hover:bg-accent-soft',
+  } as const
+
+  const wash = {
+    true: 'border-accent bg-accent-soft text-accent',
+    mixed: 'border-accent bg-accent-soft text-ink-0',
+    false: 'border-rule bg-transparent text-ink-2 hover:bg-accent-soft',
   } as const
 
   return (
@@ -171,7 +194,7 @@ export function Toggle({
         'inline-flex min-h-11 cursor-pointer items-center justify-center rounded-md',
         'border font-sans font-medium transition-colors',
         size === 'sm' ? 'px-3 text-sm' : 'px-4 text-base',
-        states[`${pressed}`],
+        (size === 'sm' ? wash : fill)[`${pressed}`],
       ].join(' ')}
     >
       {children}

@@ -4,10 +4,14 @@
 It is the durable spec. `PLAN.md` holds the phased build order.
 
 > **Status — 2026-09-14. Kana curriculum complete at v2.1; the course companion is
-> under way at v2.9.** The first pillar is finished — all seven phases, all five
+> under way at v3.0.** The first pillar is finished — all seven phases, all five
 > features in §1, plus two added afterwards on request (the pronunciation chart and
 > writing practice), the **dakuten/handakuten rows**, and **katakana**. It teaches
 > **142 characters across two scripts**.
+>
+> **v3.0 is the dashboard shell (§5).** Pillars on the left, the open pillar's
+> activities above the content, and the URLs nested to match — `#/kana/quiz`,
+> `#/course/grammar`. `src/routes.ts` is now the only place a path is written.
 >
 > **v2.9 put a quiz builder on it (§11.4).** Weeks, topics and a round length, chosen
 > on the spot, driving the cards as well as the quiz. The selection is a set of group
@@ -440,16 +444,54 @@ Two further behaviours the implementation settled, both tested:
 Everything is **desktop and mobile**. Design for a **375px viewport first**, then let it
 breathe on desktop.
 
+### The shell — two levels, because the app has two pillars
+
+**Pillars on the left, the open pillar's activities across the top of the content, the
+content in the middle.** The sidebar answers _where am I_; the activities bar answers
+_what else is here_. Neither is answering the other's question, which is what the flat
+row before it was doing with eight destinations in one line.
+
+- **`src/routes.ts` is the only place a path is written.** The router, the shell's
+  navigation and the handful of in-page links ("Change selection", "Quiz me") all have
+  to agree, and a string literal in a `<ButtonLink>` is exactly what survives a
+  restructure and quietly 404s. It exports `PATHS`, `PILLARS` and `pillarForPath`.
+- **A pillar's first section IS its landing page.** `#/kana` opens the grid; there is no
+  overview screen in between. An overview listing five links, reached by clicking a
+  sidebar entry that could have gone to one of them, is a click that buys a menu.
+- **`#/` redirects into the first pillar** rather than rendering the grid at a second
+  path. Two URLs for one screen is a bookmark that disagrees with the sidebar. The
+  redirect is `replace`, so Back leaves the app instead of bouncing off it.
+- **Pages belonging to neither pillar render no activities bar** — the styleguide and
+  the 404. Five kana activities above "page not found" is furniture insisting you are
+  somewhere you are not.
+- **The sidebar unstacks into a row below `md`.** A 375px phone has no room for a column
+  of navigation beside anything. A drawer would buy the vertical space at the cost of a
+  focus trap, an escape key and a scrim, all hand-built, to hide two links behind a
+  gesture nobody is told about. **Two links do not need hiding.**
+- The active marker flips edge with the layout: a bottom rule under a row, a left rule
+  beside a column, plus an accent wash on the rail. A single edge would point at nothing
+  in one of the two arrangements.
+
+> **A data router resolves a navigation through a promise.** `user.click` on a link can
+> return before the location has moved and the links have re-rendered, so a test that
+> reads `aria-current` straight afterwards sees the page it came FROM. It fails about
+> one full-suite run in three and passes the file in isolation every time, because the
+> gap only opens under load. Assert navigation with `waitFor`.
+
 ```
-#/               Grid        — select characters into the deck
-#/flashcards     Flashcards  — flip through the deck
-#/quiz           Quiz        — recall over the deck
-#/pronunciation  Sounds      — the whole set; tap a character to hear it
-#/writing        Writing     — hear one at random, write it on paper, then check
-#/vocabulary     Vocabulary  — a week's words: cards, and a quiz over them (§11)
-#/numbers        Numbers     — 1–100, ages and school years, generated (§11.6)
-#/grammar        Grammar     — fill the gap: です and の (§11.7)
-#/styleguide     Styleguide  — every token and component in isolation
+#/                     → redirects to #/kana
+
+#/kana                 Characters  — select characters into the deck
+#/kana/flashcards      Flashcards  — flip through the deck
+#/kana/quiz            Quiz        — recall over the deck
+#/kana/pronunciation   Sounds      — the whole set; tap a character to hear it
+#/kana/writing         Writing     — hear one at random, write it on paper, then check
+
+#/course               Vocabulary  — a week's words: cards, and a quiz over them (§11)
+#/course/numbers       Numbers     — 1–100, ages and school years, generated (§11.6)
+#/course/grammar       Grammar     — fill the gap: です and の (§11.7)
+
+#/styleguide           Styleguide  — every token and component in isolation
 ```
 
 ### The two grids
@@ -764,6 +806,7 @@ src/
   pages/        route components
   styles/       tokens.css
   types/        characters.ts
+  routes.ts     THE ONLY PLACE A PATH IS WRITTEN. §5.
   version.ts
 ```
 
@@ -814,7 +857,15 @@ state, dying when the route unmounts.
     receive one — that is structural, not a rule to remember.
 12. The class note's romaji is authoritative even where it is inconsistent with itself.
     "Fixing" `senkou` to `senkoo` changes what the owner is being graded on.
-13. **A CSS transition can leak an answer even when every rendered state is correct.**
+13. **A data router resolves a navigation through a promise.** `user.click` on a link
+    returns before the location has moved, so reading `aria-current` straight afterwards
+    sees the page you came from. Only fails under load, so it passes the file alone and
+    fails the suite. Assert navigation with `waitFor` (§5).
+14. **A vocabulary meaning and a topic label are drawn from overlapping
+    vocabularies.** でんわ means "Phone" and its topic is labelled "Phone", so a query
+    for either by bare text finds both. It has bitten three times. Scope a query to the
+    region that owns it rather than relying on a string being unique on screen.
+15. **A CSS transition can leak an answer even when every rendered state is correct.**
     Changing content and reversing a transform on the same node animates the NEW content
     through the old transform. Remount instead of un-flipping (§5). jsdom runs no
     transitions, so only a browser — or a test pinning node identity — catches this.

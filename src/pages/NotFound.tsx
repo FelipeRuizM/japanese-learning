@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Label } from '../components/ui/primitives'
+import { PATHS } from '../routes'
 
 export function NotFound() {
   return (
@@ -9,7 +10,10 @@ export function NotFound() {
         There&rsquo;s nothing at this address.
       </h2>
       <p className="m-0">
-        <Link to="/" className="text-accent underline underline-offset-4">
+        <Link
+          to={PATHS.characters}
+          className="text-accent underline underline-offset-4"
+        >
           Back to the characters
         </Link>
       </p>

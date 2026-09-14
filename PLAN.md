@@ -793,6 +793,76 @@ Not flashcards. A **generator**, because 1–100 is a rule (CLAUDE.md §11.3, §
 > assertions here would make the styleguide a second place to update, which is how a
 > styleguide stops being kept current.
 
+---
+
+## Phase 16 — The dashboard shell ✅
+
+- [x] `src/routes.ts` — `PATHS`, `PILLARS`, `pillarForPath`; the one place a path lives
+- [x] Sidebar of the two pillars; the open pillar's activities across the top of content
+- [x] URLs nested — `#/kana/quiz`, `#/course/grammar`; `#/` redirects into the first
+- [x] The sidebar unstacks into a row below `md`
+- [x] Every in-page link (`ButtonLink`, `Link`) reads from `PATHS`
+- [x] `feat: a dashboard shell with the pillars on the left`
+
+**Deployed as 3.0.**
+
+> **The sidebar holds ONLY the pillars, and the activities live in the page.** Nesting
+> all eight links in the sidebar was the other option and would have kept every
+> destination one click away. The two-level split is what makes the shell answer two
+> different questions instead of one twice: the rail says where you are, the bar says
+> what else is here. The cost is real and was accepted — reaching Writing from Grammar
+> is two clicks now.
+
+> **The URLs moved, reversing v2.7's decision, and the reason it is not a flip-flop is
+> that the premise changed.** v2.7 said "grouping is a statement about the MENU, not the
+> address space" — true of a menu with a heading in it. The grouping is now the
+> navigation, so the addresses say so. Nothing is deployed, so no public link broke.
+
+> **A pillar's first section is its landing page.** `#/kana` opens the grid. An overview
+> screen listing five links, reached by clicking a sidebar entry that could have gone to
+> one of them, is a click that buys a menu.
+
+> **A NEW BITE, and it cost an hour: a data router resolves a navigation through a
+> promise.** `user.click` on a link returns before the location has moved and the links
+> have re-rendered, so reading `aria-current` straight afterwards sees the page you came
+> FROM. It failed about one full-suite run in three and passed the file in isolation
+> every time — the gap only opens under load, which is exactly the shape of bug that
+> gets re-run until it goes green and then committed. Diagnosed by adding a probe copy
+> of the file whose only difference was a flush after the click: the copy passed while
+> the original failed in the same run. Assert navigation with `waitFor`.
+
+> **Two wrong diagnoses came first, and both looked right.** The router is a module
+> singleton, so the hash genuinely does leak between tests in the file — that is real,
+> the `beforeEach` reset that fixes it is still there, and it fixed two of the three
+> failures. The redirect genuinely does write the hash and dispatch its own
+> `hashchange` — also real, also still handled. Neither was the one that mattered, and
+> both made the remaining failure look already-explained.
+
+> **THE SCREENSHOTS FOUND TWO THINGS THE 366 TESTS COULD NOT**, and both had shipped in
+> the previous phase. Eleven topic toggles, all on by default, rendered as eleven SOLID
+> indigo blocks — brighter than the glyph beneath them, which §7 forbids in as many
+> words. And the week toggle looked exactly like its topics, so the hierarchy the markup
+> was expressing did not reach the screen. Every state was individually correct; the page
+> was wrong.  now reserves the fill for  and washes at  (accent on
+> accent-soft, 6.20:1), which fixes both at once.
+
+> **jsdom cannot see a page.** It has no layout, no paint and no viewport, so a suite
+> that is green says the states are right, never that the screen is. Run the app and look
+> at it before calling a visual phase done.
+
+> **The mobile stack needed the wash at every width, not just the rail.** Stacked on a
+> phone the pillar row and the activity row sit directly above each other, and a rule
+> alone left them reading as one list of eight. On the rail, position already says which
+> level you are looking at; on a phone nothing else does.
+
+> **THE でんわ COLLISION BIT A THIRD TIME**, and the lesson is not about でんわ.
+> It means "Phone" and its topic is labelled "Phone", so in quiz mode a question that
+> happens to offer it puts a SECOND button of that name on the page and an unscoped
+> query throws "found multiple elements" — on a fraction of shuffles, in the full suite
+> only, with a message that says nothing about the cause. A vocabulary meaning and a
+> topic label are drawn from overlapping vocabularies and ALWAYS could collide. Scope
+> queries to the region that owns them; do not rely on a string being unique on screen.
+
 ## What is left
 
 - **Deploy it.** No remote, so no workflow run, so no site (§2). Everything else on this

@@ -9,6 +9,7 @@ import { PronunciationNote } from '../components/SpeakButton'
 import { QuizCard } from '../components/QuizCard'
 import { EmptyDeck } from '../components/EmptyDeck'
 import { Button, ButtonLink, Chip, HeadingLabel } from '../components/ui/primitives'
+import { PATHS } from '../routes'
 
 export function Quiz() {
   const deck = useDeck()
@@ -136,7 +137,7 @@ function RoundSummary({
         <Button variant="primary" onClick={onAgain}>
           Go again
         </Button>
-        <ButtonLink to="/">Change selection</ButtonLink>
+        <ButtonLink to={PATHS.characters}>Change selection</ButtonLink>
       </div>
     </section>
   )

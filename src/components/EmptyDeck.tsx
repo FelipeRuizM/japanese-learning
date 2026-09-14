@@ -1,4 +1,5 @@
 import { ButtonLink, Label } from './ui/primitives'
+import { PATHS } from '../routes'
 
 /**
  * The empty-deck screen.
@@ -18,7 +19,7 @@ export function EmptyDeck({ activity }: { activity: string }) {
         Pick some characters and they&rsquo;ll show up here to {activity}. Nothing is
         saved between visits, so a refresh always starts you fresh.
       </p>
-      <ButtonLink to="/" variant="primary">
+      <ButtonLink to={PATHS.characters} variant="primary">
         Choose characters
       </ButtonLink>
     </section>

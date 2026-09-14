@@ -13,6 +13,7 @@ import { usePronunciation } from '../lib/usePronunciation'
 import { PronunciationNote, SpeakButton } from '../components/SpeakButton'
 import { Link } from 'react-router-dom'
 import { Button, Glyph, Label } from '../components/ui/primitives'
+import { PATHS } from '../routes'
 
 /**
  * Writing practice — dictation, essentially.
@@ -114,7 +115,10 @@ function PoolNote({ count, usingDeck }: { count: number; usingDeck: boolean }) {
       ) : (
         <>
           Drawing from all {count} characters —{' '}
-          <Link to="/" className="text-accent underline underline-offset-4">
+          <Link
+            to={PATHS.characters}
+            className="text-accent underline underline-offset-4"
+          >
             pick some
           </Link>{' '}
           to narrow it down.
