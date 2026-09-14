@@ -58,7 +58,7 @@ export type VocabGroup = {
 }
 
 export type VocabSet = {
-  /** Unique across the registry. `jpst100-w1-greetings`. */
+  /** Unique across the registry. One set per WEEK: `jpst100-w1`. */
   id: string
   label: string
   /**
@@ -79,7 +79,7 @@ export type VocabSet = {
  * an item does not carry a back-reference — that would denormalise data the
  * group already owns, and leave two places to get it wrong.
  *
- * `groupId` is SET-QUALIFIED (`jpst100-w1-nouns/things`) for the same reason a
+ * `groupId` is SET-QUALIFIED (`jpst100-w1/meals`) for the same reason a
  * character id is script-qualified: two weeks may both have a group called
  * "things", and the quiz must not treat them as the same one.
  */

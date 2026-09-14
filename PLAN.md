@@ -683,10 +683,61 @@ Not flashcards. A **generator**, because 1–100 is a rule (CLAUDE.md §11.3, §
 
 ---
 
+## Phase 14 — Week 1, re-sourced from the weekly note ✅
+
+- [x] `src/vocab/week1.ts` — ONE set per week, the note's 11 tables as its groups
+- [x] 44 items, checked row by row against the note: every kana and every romaji
+- [x] `week1Greetings.ts`, `week1Introduction.ts`, `week1Nouns.ts` deleted
+- [x] The colliding pair moved: いただきます / ごちそうさまでした, both glossed
+      "Thank you for the food"
+- [x] A new guard — no Chinese characters in a `note` or an `english` either
+- [x] `feat: re-source Week 1 from the weekly summary note`
+
+**Deployed as 2.8.**
+
+> **A week had to become ONE set, and that is the whole reason this phase exists.**
+> "Choose some weeks, then choose topics inside them" only parses if a week is one thing
+> with topics in it. Three sets per week made "week" a label convention — `Week 1 ·
+> Greetings`, `Week 1 · Self introduction` — and a convention cannot be a filter.
+
+> **The summary note is now the only source, and that removed real content.** ただいま,
+> おかえりなさい, よろしくおねがいします, the ございます pair, ブラジル, カナダ and
+> いちねんせい〜ごねんせい are not in its tables, so they are gone. So is every
+> `example` sentence: the tables have no example column, and the ones that were here had
+> been written for the grammar notes rather than taken from class. Filling an optional
+> field with invented sentences is how a transcription quietly becomes an authored deck.
+
+> **The collision moved rather than disappeared, which is why it was keyed on values.**
+> The ございます pairs left and いただきます / ごちそうさまでした arrived — both glossed
+> "Thank you for the food" by the note itself. `collides` needed no edit, exactly as it
+> needed none when katakana brought 71 homophones (§3.5). `registry.test.ts` re-pinned
+> the list, and nothing else changed.
+
+> **The new pair is strictly harder than the old one, because they share a GROUP.**
+> "Meals" has two items, so for either of them the first distractor tier yields nothing
+> at all — not "too few", but zero — and all three distractors must come from outside a
+> group that is not empty. A fallback keyed on "is this group big enough" rather than on
+> "how many did we actually get" ships a three-option question here. It was already
+> keyed the right way; there is now a test that says so.
+
+> **One flake was introduced, and caught before it could bite.** でんわ means "Phone" and
+> sits in the group labelled "Phone", so two card tests that found the meaning by bare
+> text also matched the category chip — passing or failing on which item the shuffle
+> dealt, about one visit in forty-four. Both faces are always in the DOM, so this was
+> never about the reveal; both queries are scoped to the card element now.
+
+> **Three tests were lost to there being one registered week**, and the note belongs
+> here rather than in a commit message: the two that switched to a second set cannot
+> run, and inventing a fixture week to keep them alive would only test the fixture. What
+> they guarded — a changed selection remounts the cards — is still covered through the
+> mode toggle, and comes back properly in Phase 15, when the selection becomes weeks and
+> topics rather than one set.
+
 ## What is left
 
 - **Deploy it.** No remote, so no workflow run, so no site (§2). Everything else on this
   list is smaller than this one.
+- **The quiz builder** — weeks, topics and a question count, chosen on the spot.
 - **Week 2**, whenever the vault has it — a data module and a registry entry per §11.8.
 - **Kanji**, which the course teaches and which needs the `layout: 'flow'` branch the
   grid has carried unused since Phase 2 (§3.2).

@@ -1,8 +1,6 @@
 import type { Speakable } from '../lib/pronunciation'
 import type { VocabEntry, VocabItem, VocabSet } from '../types/vocab'
-import { WEEK1_GREETINGS } from './week1Greetings'
-import { WEEK1_INTRODUCTION } from './week1Introduction'
-import { WEEK1_NOUNS } from './week1Nouns'
+import { WEEK1 } from './week1'
 
 /**
  * THE VOCABULARY REGISTRY (CLAUDE.md §11).
@@ -11,14 +9,13 @@ import { WEEK1_NOUNS } from './week1Nouns'
  * a data module and one entry here. Nothing that renders vocabulary may import
  * a week's module or name a week — they iterate this list.
  *
- * Sets are listed in the order they should be studied, and the order is the
- * order of the class notes: what was said in the room first comes first.
+ * ONE SET PER WEEK, in the order the weeks happened. A set used to be a single
+ * class note, which made "week 1" three sets sharing a label prefix — fine to
+ * read, impossible to filter on. A drill that offers "these weeks, these topics"
+ * needs the week to be the structure and the topics to be its groups, so that
+ * is what a set is now.
  */
-export const VOCAB_SETS: readonly VocabSet[] = [
-  WEEK1_GREETINGS,
-  WEEK1_INTRODUCTION,
-  WEEK1_NOUNS,
-]
+export const VOCAB_SETS: readonly VocabSet[] = [WEEK1]
 
 export function vocabSetById(id: string): VocabSet | undefined {
   return VOCAB_SETS.find((set) => set.id === id)

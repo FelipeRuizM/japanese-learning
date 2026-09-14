@@ -30,10 +30,21 @@ function seeded(seed: number): Rng {
   }
 }
 
+/**
+ * THE COLLIDING PAIR. The class note glosses both of these "Thank you for the
+ * food", separating them only by when they are said — so they may never be two
+ * options in one question (CLAUDE.md §11.2).
+ *
+ * They also sit in the same group, "Meals", which makes them the sharpest case
+ * in the file: the tier that would reach for a distractor first is the tier
+ * holding the one item that must never be drawn.
+ */
+const ITADAKIMASU = byKana('いただきます')
+const GOCHISOOSAMA = byKana('ごちそうさまでした')
+
 const OHAYOO = byKana('おはよう')
-const OHAYOO_POLITE = byKana('おはようございます')
-const ARIGATOO = byKana('ありがとう')
-const ARIGATOO_POLITE = byKana('ありがとうございます')
+const KONNICHIWA = byKana('こんにちは')
+const GOZEN = byKana('ごぜん')
 
 const firstSet = () => {
   const set = VOCAB_SETS[0]
@@ -68,64 +79,73 @@ describe('distractors', () => {
   /**
    * THE COLLISION RULE (CLAUDE.md §11.2).
    *
-   * おはよう and おはようございます both mean "Good morning". Putting them in one
-   * question makes it unanswerable in both directions at once — two options
-   * would read "Good morning", and the prompt "Good morning" would match two
-   * options. Same for ありがとう / ありがとうございます.
+   * いただきます and ごちそうさまでした are both glossed "Thank you for the
+   * food". Putting them in one question makes it unanswerable in both
+   * directions at once — two options would read "Thank you for the food", and
+   * the prompt "Thank you for the food" would match two options.
    */
-  it('never puts a casual/polite pair in the same question', () => {
+  it('never puts a colliding pair in the same question', () => {
     for (let seed = 0; seed < 60; seed++) {
-      const forCasual = vocabDistractorsFor(OHAYOO, scope, ALL, seeded(seed))
-      expect(forCasual.map((e) => e.item.kana)).not.toContain('おはようございます')
+      const forBefore = vocabDistractorsFor(ITADAKIMASU, scope, ALL, seeded(seed))
+      expect(forBefore.map((e) => e.item.kana)).not.toContain('ごちそうさまでした')
 
-      const forPolite = vocabDistractorsFor(OHAYOO_POLITE, scope, ALL, seeded(seed))
-      expect(forPolite.map((e) => e.item.kana)).not.toContain('おはよう')
-
-      const forThanks = vocabDistractorsFor(ARIGATOO, scope, ALL, seeded(seed))
-      expect(forThanks.map((e) => e.item.kana)).not.toContain('ありがとうございます')
+      const forAfter = vocabDistractorsFor(GOCHISOOSAMA, scope, ALL, seeded(seed))
+      expect(forAfter.map((e) => e.item.kana)).not.toContain('いただきます')
     }
   })
 
   /**
    * The pair must not slip in as two DISTRACTORS either. A question whose
-   * answer is いただきます could otherwise draw both おはよう and
-   * おはようございます and show "Good morning" twice.
+   * answer is こんにちは could otherwise draw both meal phrases and show
+   * "Thank you for the food" twice.
    */
   it('never draws a colliding pair as two distractors', () => {
     for (let seed = 0; seed < 60; seed++) {
-      for (const answer of [byKana('いただきます'), byKana('こんにちは')]) {
+      for (const answer of [KONNICHIWA, OHAYOO, GOZEN]) {
         const kana = vocabDistractorsFor(answer, scope, ALL, seeded(seed)).map(
           (e) => e.item.kana,
         )
-        expect(kana.includes('おはよう') && kana.includes('おはようございます')).toBe(
-          false,
-        )
         expect(
-          kana.includes('ありがとう') && kana.includes('ありがとうございます'),
+          kana.includes('いただきます') && kana.includes('ごちそうさまでした'),
         ).toBe(false)
       }
     }
   })
 
   it('prefers the answer’s own group before reaching outside it', () => {
-    // "Leaving & returning home" has four items, so all three distractors can
-    // and must come from it — those are the four a beginner actually mixes up.
-    const tadaima = byKana('ただいま')
+    // "Greetings & set phrases" has seven items, so all three distractors can
+    // and must come from it — those are the ones a beginner actually mixes up.
     for (let seed = 0; seed < 25; seed++) {
-      const picked = vocabDistractorsFor(tadaima, scope, ALL, seeded(seed))
-      expect(picked.every((e) => e.groupId === tadaima.groupId)).toBe(true)
+      const picked = vocabDistractorsFor(OHAYOO, scope, ALL, seeded(seed))
+      expect(picked.every((e) => e.groupId === OHAYOO.groupId)).toBe(true)
     }
   })
 
   /**
-   * A group smaller than four cannot fill a question from itself. "Meals" has
-   * exactly two items, so the rest must come from the wider set.
+   * A group smaller than four cannot fill a question from itself. "Time" has
+   * exactly two items, so one distractor comes from the group and the rest
+   * from the wider set.
    */
   it('falls outside a group too small to fill the question', () => {
-    const meals = byKana('いただきます')
-    const picked = vocabDistractorsFor(meals, scope, ALL, seeded(7))
+    const picked = vocabDistractorsFor(GOZEN, scope, ALL, seeded(7))
     expect(picked).toHaveLength(3)
-    expect(picked.filter((e) => e.groupId === meals.groupId)).toHaveLength(1)
+    expect(picked.filter((e) => e.groupId === GOZEN.groupId)).toHaveLength(1)
+  })
+
+  /**
+   * THE HARSHER CASE, and the reason the two rules are not one rule. "Meals"
+   * also has two items — but the other one is the answer's collision, so the
+   * first tier yields NOTHING and all three distractors come from outside a
+   * group that is not empty. A fallback keyed on "is the group big enough"
+   * rather than on "how many did we actually get" would ship three options
+   * here.
+   */
+  it('falls outside a group whose only other member collides', () => {
+    for (let seed = 0; seed < 25; seed++) {
+      const picked = vocabDistractorsFor(ITADAKIMASU, scope, ALL, seeded(seed))
+      expect(picked).toHaveLength(3)
+      expect(picked.filter((e) => e.groupId === ITADAKIMASU.groupId)).toHaveLength(0)
+    }
   })
 
   /**
@@ -134,9 +154,9 @@ describe('distractors', () => {
    * registry is the last resort.
    */
   it('fills four options from a scope holding only a colliding pair', () => {
-    const tiny = [OHAYOO, OHAYOO_POLITE]
+    const tiny = [ITADAKIMASU, GOCHISOOSAMA]
     for (let seed = 0; seed < 25; seed++) {
-      const question = buildVocabQuestion(OHAYOO, tiny, ALL, seeded(seed))
+      const question = buildVocabQuestion(ITADAKIMASU, tiny, ALL, seeded(seed))
       expect(question.options).toHaveLength(VOCAB_OPTION_COUNT)
 
       const shown = question.options.map((o) =>
@@ -145,20 +165,15 @@ describe('distractors', () => {
       expect(new Set(shown).size).toBe(VOCAB_OPTION_COUNT)
       // The one other item in scope is the one that may never be drawn.
       expect(question.options.map((o) => o.item.kana)).not.toContain(
-        'おはようございます',
+        'ごちそうさまでした',
       )
     }
   })
 
   it('fills four options even from a scope of one', () => {
-    const question = buildVocabQuestion(
-      ARIGATOO_POLITE,
-      [ARIGATOO_POLITE],
-      ALL,
-      seeded(3),
-    )
+    const question = buildVocabQuestion(GOCHISOOSAMA, [GOCHISOOSAMA], ALL, seeded(3))
     expect(question.options).toHaveLength(VOCAB_OPTION_COUNT)
-    expect(question.options.map((o) => o.item.kana)).not.toContain('ありがとう')
+    expect(question.options.map((o) => o.item.kana)).not.toContain('いただきます')
   })
 })
 

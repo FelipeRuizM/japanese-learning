@@ -95,14 +95,16 @@ function VocabCardDemo() {
   const set = VOCAB_SETS[0]
   const { status, speak } = usePronunciation()
   const [revealed, setRevealed] = useState(false)
-  const item = set ? vocabEntries(set)[0]?.item : undefined
-  if (!item) return null
+  // The entry carries its own group, so the demo cannot drift from the data the
+  // way a hardcoded label did — it named a group that no longer exists.
+  const entry = set ? vocabEntries(set)[0] : undefined
+  if (!entry) return null
 
   return (
     <div className="flex flex-col gap-3">
       <VocabCard
-        item={item}
-        group="Daily greetings"
+        item={entry.item}
+        group={entry.groupLabel}
         revealed={revealed}
         onFlip={() => {
           setRevealed((r) => !r)

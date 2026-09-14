@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -18,6 +18,29 @@ vi.mock('../lib/usePronunciation', () => ({
 const card = () => screen.getByRole('button', { expanded: false })
 const flipped = () => screen.getByRole('button', { expanded: true })
 
+/** The card whichever way up it is, for queries that must exclude its contents. */
+const cardEl = () => {
+  const el = screen.getAllByRole('button').find((b) => b.hasAttribute('aria-expanded'))
+  if (!el) throw new Error('no card on screen')
+  return el
+}
+
+/**
+ * The group labels showing as the reveal's category chip.
+ *
+ * SCOPED OUTSIDE THE CARD, and it has to be: でんわ MEANS "Phone" and sits in
+ * the group labelled "Phone", so a bare text query cannot tell the chip from
+ * the card's own meaning. Both faces of the card are always in the DOM, so
+ * before any reveal that query already finds one — a test keyed on text alone
+ * passes or fails on which item the shuffle deals, which is the worst kind of
+ * failure to debug. The chip is rendered outside the card button; that is the
+ * distinction this filters on.
+ */
+const groupChipsOnScreen = (labels: readonly string[]) =>
+  labels.filter((label) =>
+    screen.queryAllByText(label).some((el) => !cardEl().contains(el)),
+  )
+
 function firstSet(): VocabSet {
   const set = VOCAB_SETS[0]
   if (!set) throw new Error('no vocabulary set is registered')
@@ -29,10 +52,12 @@ const PROMPT = 'Show the meaning of '
 /**
  * Which item is on screen, read off the card's accessible name.
  *
- * MATCHED EXACTLY, NOT BY `includes`. Three pairs in Week 1 are prefixes of each
- * other — ありがとう/ありがとうございます, おはよう/おはようございます — so a
- * substring search returns the short one whenever the shuffle deals the long
- * one, and the test then fails about one visit in eight. It did.
+ * MATCHED EXACTLY, NOT BY `includes`. When one item's kana is a prefix of
+ * another's, a substring search returns the short one whenever the shuffle
+ * deals the long one, and the test then fails on a fraction of visits. It did,
+ * back when the set carried ありがとう beside ありがとうございます. The exact
+ * match is kept rather than relaxed because a later week will reintroduce the
+ * shape, and an intermittent test is worse than a strict one.
  */
 function currentItem() {
   const name = card().getAttribute('aria-label') ?? ''
@@ -54,17 +79,17 @@ beforeEach(() => {
 })
 
 describe('Vocabulary flashcards', () => {
-  it('offers every registered set, with the first one pressed', () => {
+  /**
+   * A set is now a WEEK, and one week is registered — so the week chooser
+   * renders nothing at all. That is `SetPicker`'s own rule (§3.5) rather than
+   * anything this page decides, and the assertion is here because the page is
+   * where it is visible: a chooser offering a single option is a control that
+   * cannot do anything.
+   */
+  it('renders no week chooser while a single week is registered', () => {
     show()
-    expect(screen.getByRole('group', { name: 'Vocabulary set' })).toBeInTheDocument()
-
-    for (const set of VOCAB_SETS) {
-      expect(screen.getByRole('button', { name: set.label })).toBeInTheDocument()
-    }
-    expect(screen.getByRole('button', { name: firstSet().label })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(VOCAB_SETS).toHaveLength(1)
+    expect(screen.queryByRole('group', { name: 'Vocabulary set' })).toBeNull()
   })
 
   it('counts the cards in the chosen set, and heads the position', () => {
@@ -107,7 +132,8 @@ describe('Vocabulary flashcards', () => {
     expect(flipped()).toHaveAccessibleName(
       `${item.kana} is "${item.romaji}" — ${item.english}. Hide the meaning.`,
     )
-    expect(screen.getByText(item.english)).toBeInTheDocument()
+    // Scoped to the card: a meaning can also be a group label on this page.
+    expect(within(flipped()).getByText(item.english)).toBeInTheDocument()
   })
 
   /**
@@ -119,13 +145,10 @@ describe('Vocabulary flashcards', () => {
     show()
     const groups = firstSet().groups.map((g) => g.label)
 
-    for (const label of groups) {
-      expect(screen.queryByText(label)).not.toBeInTheDocument()
-    }
+    expect(groupChipsOnScreen(groups)).toEqual([])
 
     await user.click(card())
-    const shown = groups.filter((label) => screen.queryByText(label) !== null)
-    expect(shown).toHaveLength(1)
+    expect(groupChipsOnScreen(groups)).toHaveLength(1)
   })
 
   it('speaks on the reveal and stays silent flipping back', async () => {
@@ -222,26 +245,15 @@ describe('Vocabulary flashcards', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
   })
 
-  it('switches sets and starts the new one from the top', async () => {
-    const user = userEvent.setup()
-    show()
-    const second = VOCAB_SETS[1]
-    if (!second) throw new Error('this test needs a second set')
-
-    await user.click(screen.getByRole('button', { name: 'Next' }))
-    await user.click(screen.getByRole('button', { name: second.label }))
-
-    expect(
-      screen.getByRole('heading', {
-        level: 2,
-        name: `Card 1 of ${allVocab(second).length}`,
-      }),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: second.label })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
-  })
+  /*
+   * There was a test here that switched to a second set and asserted the cards
+   * restarted from the top. It cannot run against a single registered week, and
+   * writing a fixture week to keep it alive would test the fixture. The
+   * behaviour it guarded — a changed selection remounts the cards — is still
+   * covered by "goes back to the cards, from the top", which switches MODE
+   * through the same remount. It comes back properly in the next phase, when
+   * the selection becomes weeks and topics rather than one set.
+   */
 
   it('cites the class note the set came from', () => {
     show()
@@ -299,6 +311,13 @@ describe('Vocabulary quiz', () => {
   })
 
   /** Four options that show the same thing twice is not a question (§11.2). */
+  /*
+   * WALKS THE WHOLE ROUND, which is now 44 questions rather than 16: a week
+   * is one set now, so a round is the whole week. Two clicks each through
+   * jsdom overruns the 5s default, hence the explicit timeout rather than a
+   * shortened walk — the point of these three is that the round holds
+   * together end to end, and a partial walk would not say that.
+   */
   it('never shows the same option value twice', async () => {
     const user = userEvent.setup()
     show()
@@ -314,7 +333,7 @@ describe('Vocabulary quiz', () => {
       await user.click(first)
       await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
     }
-  })
+  }, 30000)
 
   it('marks the right answer and says so in words, not only colour', async () => {
     const user = userEvent.setup()
@@ -363,6 +382,13 @@ describe('Vocabulary quiz', () => {
     expect(allVocab(firstSet()).some((i) => i.kana === spoken.ja)).toBe(true)
   })
 
+  /*
+   * WALKS THE WHOLE ROUND, which is now 44 questions rather than 16: a week
+   * is one set now, so a round is the whole week. Two clicks each through
+   * jsdom overruns the 5s default, hence the explicit timeout rather than a
+   * shortened walk — the point of these three is that the round holds
+   * together end to end, and a partial walk would not say that.
+   */
   it('counts the round and reports a score that matches the verdicts', async () => {
     const user = userEvent.setup()
     show()
@@ -383,8 +409,15 @@ describe('Vocabulary quiz', () => {
       screen.getByRole('heading', { level: 2, name: 'Round complete' }),
     ).toBeInTheDocument()
     expect(screen.getByText(`${correct} / ${total}`)).toBeInTheDocument()
-  })
+  }, 30000)
 
+  /*
+   * WALKS THE WHOLE ROUND, which is now 44 questions rather than 16: a week
+   * is one set now, so a round is the whole week. Two clicks each through
+   * jsdom overruns the 5s default, hence the explicit timeout rather than a
+   * shortened walk — the point of these three is that the round holds
+   * together end to end, and a partial walk would not say that.
+   */
   it('starts a fresh round on Go again', async () => {
     const user = userEvent.setup()
     show()
@@ -402,29 +435,9 @@ describe('Vocabulary quiz', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: `Question 1 of ${total}` }),
     ).toBeInTheDocument()
-  })
+  }, 30000)
 
-  it('starts a new round when the set changes', async () => {
-    const user = userEvent.setup()
-    show()
-    await enterQuiz(user)
-    const second = VOCAB_SETS[1]
-    if (!second) throw new Error('this test needs a second set')
-
-    const first = optionButtons()[0]
-    if (!first) throw new Error('no options')
-    await user.click(first)
-    await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
-
-    await user.click(screen.getByRole('button', { name: second.label }))
-
-    expect(
-      screen.getByRole('heading', {
-        level: 2,
-        name: `Question 1 of ${allVocab(second).length}`,
-      }),
-    ).toBeInTheDocument()
-  })
+  /* Removed with its sibling above, and for the same reason. */
 
   it('goes back to the cards, from the top', async () => {
     const user = userEvent.setup()

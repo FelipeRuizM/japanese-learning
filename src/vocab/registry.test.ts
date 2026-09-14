@@ -18,14 +18,33 @@ import {
  */
 
 /**
- * Kana, plus the two marks that legitimately appear in a vocabulary entry:
- * the wave dash 〜 that stands in for the missing half of a suffix (〜じん),
- * and the prolonged sound mark ー inside a loanword.
+ * Kana, plus the two marks that legitimately appear in a vocabulary entry: the
+ * wave dash 〜 that stands in for the missing half of a suffix, and the
+ * prolonged sound mark ー inside a loanword. Week 1 uses neither — it writes
+ * its suffixes bare, as the class note does — but a later week will.
  */
 const KANA_ONLY = /^[ぁ-ゟ゠-ヿ〜]+$/u
 
-/** As written in class: lowercase, spaces between words, hyphens for suffixes. */
-const CLASS_ROMAJI = /^[a-z\- ]+$/
+/**
+ * As written in class: plain Latin letters, spaces between words, hyphens for
+ * suffixes. No macrons — the class doubles its long vowels (`ohayoo`), and a
+ * macron here would mean someone "corrected" it into Hepburn (§11.2).
+ *
+ * A capital is allowed because the note capitalises a proper noun (`Kankoku`),
+ * and the rule is to follow the note. It is a narrow widening: the guard exists
+ * to catch macrons and Chinese characters, and it still catches both.
+ */
+const CLASS_ROMAJI = /^[A-Za-z\- ]+$/
+
+/**
+ * Any Chinese character, anywhere a learner reads.
+ *
+ * The rule that there is no field for the written form (§11.2) is easy to obey
+ * in `kana` and easy to forget in `note`, because a note is free text and the
+ * class note's own Notes column carries "Kanji: 医者". Transcribed as-is, that
+ * puts on a card the exact thing this app has no business showing a beginner.
+ */
+const IDEOGRAPH = /[\u3400-\u4dbf\u4e00-\u9fff]/u
 
 describe('the vocabulary registry', () => {
   it('registers at least one set, each distinctly identified and labelled', () => {
@@ -100,6 +119,14 @@ describe.each(VOCAB_SETS.map((set): [string, VocabSet] => [set.label, set]))(
       }
     })
 
+    it('puts no Chinese characters in a note or a meaning either', () => {
+      for (const item of items) {
+        expect(item.english, `${item.id} meaning`).not.toMatch(IDEOGRAPH)
+        if (item.note === undefined) continue
+        expect(item.note, `${item.id} note`).not.toMatch(IDEOGRAPH)
+      }
+    })
+
     it('writes every example sentence in kana too', () => {
       for (const item of items) {
         if (item.example === undefined) continue
@@ -139,17 +166,18 @@ describe.each(VOCAB_SETS.map((set): [string, VocabSet] => [set.label, set]))(
 
 describe('meanings that more than one item shares', () => {
   /**
-   * TWO ITEMS REALLY DO SHARE A MEANING, and both pairs are a casual/polite
-   * distinction rather than a typo: おはよう / おはようございます, and
-   * ありがとう / ありがとうございます.
+   * TWO ITEMS REALLY DO SHARE A MEANING, and it is not a typo: the class note
+   * glosses both いただきます and ごちそうさまでした as "Thank you for the
+   * food". They are distinguished by WHEN they are said, which is what each
+   * one's note carries — not by what they mean.
    *
-   * This is the vocabulary version of the お/を collision (§6). A quiz asking
-   * "which one means Good morning?" has two correct answers, so the pair may
-   * never be options in the same question — and a quiz built later must not
-   * discover that on screen. Pinning the list here means a NEW collision, from
-   * a week typed in later, fails this test instead.
+   * This is the vocabulary version of the お/を collision (§6). A question
+   * reading "which one means Thank you for the food?" has two correct answers,
+   * so the pair may never be options in the same question — and the quiz must
+   * not discover that on screen. Pinning the list here means a NEW collision,
+   * from a week typed in later, fails this test instead.
    */
-  const KNOWN_SHARED_MEANINGS = ['Good morning', 'Thank you']
+  const KNOWN_SHARED_MEANINGS = ['Thank you for the food']
 
   it('is exactly the list the quiz will have to exclude', () => {
     const english = everyVocabItem().map((item: VocabItem) => item.english)

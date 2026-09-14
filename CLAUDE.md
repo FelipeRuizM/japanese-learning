@@ -3,14 +3,23 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-09-11. Kana curriculum complete at v2.1; the course companion is
-> under way at v2.2.** The first pillar is finished — all seven phases, all five
+> **Status — 2026-09-14. Kana curriculum complete at v2.1; the course companion is
+> under way at v2.8.** The first pillar is finished — all seven phases, all five
 > features in §1, plus two added afterwards on request (the pronunciation chart and
 > writing practice), the **dakuten/handakuten rows**, and **katakana**. It teaches
 > **142 characters across two scripts**.
 >
-> **v2.6 completed the plan.** The grammar cloze (§11.7) is the last of the twelve
-> phases: every part of JPST 100 Week 1 is now drillable, in the shape that fits it.
+> **v2.8 re-sourced Week 1 from the week's summary note, and changed what a set IS.**
+> A `VocabSet` is now a **week**, and the note's tables are its **groups** — 44 items in
+> eleven groups, replacing three sets assembled from three different class notes. The
+> reason is the drill being built next: "some weeks, then some topics inside them" only
+> parses if a week is one thing with topics in it. See §11.2 and §11.8.
+>
+> **v2.7 grouped the nav into Kana and Course.** Eight flat destinations across two
+> pillars said nothing about which pillar you were in. The URLs did not move.
+>
+> **v2.6 completed the original plan.** The grammar cloze (§11.7) was the last of the
+> twelve phases: every part of JPST 100 Week 1 is drillable, in the shape that fits it.
 >
 > **v2.5 added the numbers drill** (§11.6) — a generator, not a deck, and the first
 > screen in the app whose prompt is not Japanese. It also extracted the verdict line and
@@ -21,7 +30,7 @@ It is the durable spec. `PLAN.md` holds the phased build order.
 > drills that are not flashcard-shaped: the numbers generator and the grammar cloze.
 >
 > **v2.2 opened the second pillar (§11):** the vocabulary model, the registry, and
-> JPST 100 Week 1 as data — 42 items across three sets, with no UI. **v2.3 put a screen
+> JPST 100 Week 1 as data, with no UI. **v2.3 put a screen
 > on it** — `#/vocabulary`, flashcards over a chosen set (§11.4). Phases 10–12 in
 > `PLAN.md` build the vocabulary quiz, the numbers generator and the grammar cloze.
 >
@@ -815,9 +824,11 @@ C:\Users\felip\Desktop\Home\Obsidian Vault\big-brain\UBC\Winter 1\JPST 100\
 (There is a second, near-empty `Obsidian Vault` under `OneDrive/Documentos`. It is not
 the one. Do not read it and conclude the notes are missing.)
 
-A week's folder holds one note per topic. **Read the notes; do not ask for them to be
-pasted.** Every `VocabSet` cites the note it came from, so a card that looks wrong can
-be checked against the source rather than argued about.
+A week's folder holds one note per topic **plus a summary note, `! Things I've learned
+this week`, whose tables are the week's vocabulary.** That summary note is the source the
+app is built from; the per-topic notes are background. **Read the notes; do not ask for
+them to be pasted.** Every `VocabSet` cites the note it came from, so a card that looks
+wrong can be checked against the source rather than argued about.
 
 ### 11.1 The model — `src/types/vocab.ts`
 
@@ -833,12 +844,12 @@ export type VocabItem = {
   example?: VocabExample // only where the item is a building block
 }
 
-export type VocabGroup = { id: string; label: string; items: VocabItem[] }
+export type VocabGroup = { id: string; label: string; items: VocabItem[] } // a table
 
 export type VocabSet = {
-  id: string // 'jpst100-w1-greetings'
+  id: string // 'jpst100-w1' — one set per WEEK
   label: string
-  source: string // the class note this was transcribed from
+  source: string // the week note this was transcribed from
   groups: VocabGroup[]
 }
 ```
@@ -857,8 +868,23 @@ distractor tiers — keyed on `rowId` and `vowel` — are meaningless for words.
 - **`src/vocab/registry.ts` exports `VOCAB_SETS`**, and a new week is **a data module
   plus one entry** — the same rule the character registry follows, for the same reason.
   Nothing that renders vocabulary may import a week's module or name a week.
+- **A set is a WEEK, and the week note's tables are its groups.** This is the shape the
+  drill is chosen through — some weeks, then some topics inside them — and that sentence
+  does not parse if a week is three sets sharing a label prefix. Week 1 is one set of 44
+  items in eleven groups.
+- **THE WEEK'S SUMMARY NOTE IS THE SOURCE, AND IT IS THE ONLY SOURCE.** Every item is a
+  row in one of its tables and no item exists that is not. The per-topic notes in the
+  same folder are the explanations; the summary note is the list. That is what makes a
+  card checkable: `source` names one file, and the row is in it.
+- **Do not invent an `example` to fill the optional field.** The tables have no example
+  column, so no Week 1 item carries one. Sentences written to fill a slot are how a
+  transcription quietly becomes an authored deck.
 - **Every entry is kana.** A test asserts it, allowing only the wave dash `〜` (the
-  missing half of a suffix, `〜じん`) and the prolonged sound mark `ー`.
+  missing half of a suffix) and the prolonged sound mark `ー`.
+- **No Chinese characters in a `note` or an `english` either**, and a test asserts that
+  too. The rule is easy to obey in `kana` and easy to forget in `note`, which is free
+  text — the Week 1 note's own Notes column carries "Kanji: 医者", and transcribed as-is
+  that puts on a card the one thing a beginner cannot read.
 - **There is no field for the written form in Chinese characters, and adding one is a
   real decision rather than a detail.** The leak test (§3.2) forbids naming a script
   outside the character data layer, so a field named for one would have to widen that
@@ -868,11 +894,23 @@ distractor tiers — keyed on `rowId` and `vowel` — are meaningless for words.
   `ohayoo`, `sayoonara`, `gochisoosama`. These are the strings the owner is graded on.
   Where the class note is internally inconsistent, **follow the note** — `senkou` stays
   `senkou` even beside `ohayoo`.
-- **Two items really do share a meaning** — おはよう/おはようございます and
-  ありがとう/ありがとうございます, each a casual/polite pair. This is the vocabulary
-  version of the お/を collision (§6): they may never be two options in one question.
-  `registry.test.ts` pins the list, so a **new** collision typed in with a later week
-  fails a test rather than surfacing on screen.
+- **Two items really do share a meaning** — いただきます and ごちそうさまでした, both
+  glossed "Thank you for the food" by the note itself, separated only by when they are
+  said. This is the vocabulary version of the お/を collision (§6): they may never be two
+  options in one question. `registry.test.ts` pins the list, so a **new** collision typed
+  in with a later week fails a test rather than surfacing on screen.
+
+  > **These two also share a GROUP, which is the harder case.** "Meals" holds exactly
+  > them, so for either one the first distractor tier yields **zero** — not "too few" —
+  > and all three distractors come from outside a group that is not empty. A fallback
+  > keyed on "is this group big enough" rather than on "how many did we actually get"
+  > ships a three-option question here.
+
+  > **The collision has already moved once and cost nothing.** Until v2.8 it was
+  > おはよう/おはようございます and ありがとう/ありがとうございます, and those items are
+  > no longer in the course note. `collides` needed no edit, because it is keyed on the
+  > displayed values rather than on a named pair — the same bet that paid when katakana
+  > arrived with 71 homophones (§3.5). **Do not re-key it on a pair.**
 
 ### 11.3 What the course material actually is
 
@@ -917,8 +955,15 @@ because someone remembered not to.
 - **The remount-on-advance invariant applies unchanged** (§5, bite 13), and its test is
   duplicated rather than shared, because it is the card's invariant and not the page's.
 - **The group label is shown only after the reveal.** "Meals" narrows いただきます to one
-  of two and "Leaving & returning home" narrows ただいま to one of four: a category
-  beside a prompt is a hint. After the reveal it is context, which is what it was for.
+  of two and "Time" narrows ごぜん to one of two: a category beside a prompt is a hint.
+  After the reveal it is context, which is what it was for.
+
+  > **A meaning can also be a group label, so a test that finds either by bare text
+  > matches both.** でんわ means "Phone" and sits in the group labelled "Phone". Both
+  > faces of the card are always in the DOM, so this is not about the reveal — it is
+  > about scope, and the category chip is rendered outside the card element precisely so
+  > a query can tell them apart. Two tests failed on one shuffle in forty-four before
+  > they were scoped.
 - Each set **cites its class note on screen**, so a card that looks wrong can be checked
   rather than argued about.
 
@@ -945,7 +990,7 @@ parameter list with a shuffle in it.
   displayed value; it appears only in the reveal, beside the kana it transcribes.
 - **`VocabEntry` exists because an item does not know its group.** `{ item, groupId,
 groupLabel }`, built by `vocabEntries(set)`. `groupId` is **set-qualified**
-  (`jpst100-w1-nouns/things`) for the same reason a character id is script-qualified:
+  (`jpst100-w1/meals`) for the same reason a character id is script-qualified:
   two weeks may both have a group called "things" and the quiz must not treat them as
   one.
 
@@ -1019,7 +1064,15 @@ asks a grammar question that is secretly a vocabulary question.
 
 ### 11.8 Adding a week
 
-1. Read the week's folder in the vault.
-2. One `VocabSet` per class note, ids `jpst100:w<n>:<romaji>`.
-3. Register it. Run the tests — the shared-meaning list is the one most likely to fire.
-4. Bump `APP_VERSION`, commit, report.
+1. Read the week's **`! Things I've learned this week`** note. That file is the source;
+   the per-topic notes beside it are background, and nothing enters the app from them.
+2. **One `VocabSet` for the week** — id `jpst100-w<n>`, label `Week <n>`, `source` naming
+   that note. **One `VocabGroup` per table**, labelled as the table is headed.
+3. One item per table row, ids `jpst100:w<n>:<romaji>`. Transcribe, do not improve:
+   `kana` from the Hiragana column, `romaji` from the Romaji column, `english` from the
+   Meaning column, `note` from the Notes column with any Chinese characters rewritten in
+   kana or dropped.
+4. Register it. Run the tests — the shared-meaning list is the one most likely to fire,
+   and it is supposed to: a new collision is a real fact about the week, and pinning it
+   is how the quiz stays answerable.
+5. Bump `APP_VERSION`, commit, report.
