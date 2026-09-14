@@ -1,5 +1,5 @@
 import type { Speakable } from '../lib/pronunciation'
-import type { VocabEntry, VocabItem, VocabSet } from '../types/vocab'
+import type { VocabEntry, VocabGroup, VocabItem, VocabSet } from '../types/vocab'
 import { WEEK1 } from './week1'
 
 /**
@@ -42,10 +42,30 @@ export function vocabEntries(set: VocabSet): VocabEntry[] {
   return set.groups.flatMap((group) =>
     group.items.map((item) => ({
       item,
-      groupId: `${set.id}/${group.id}`,
+      groupId: vocabGroupId(set, group),
       groupLabel: group.label,
     })),
   )
+}
+
+/**
+ * A group's SET-QUALIFIED id — the handle a selection stores.
+ *
+ * One function rather than a template literal in two places. The scope picker
+ * records what you chose by this id and the entries carry it, so if the two
+ * spellings ever drifted the selection would silently match nothing: a picker
+ * that looks selected over an empty round.
+ */
+export function vocabGroupId(set: VocabSet, group: VocabGroup): string {
+  return `${set.id}/${group.id}`
+}
+
+/** A set's groups as `{ id, label }`, ids qualified — what a picker renders. */
+export function vocabGroupRefs(set: VocabSet): { id: string; label: string }[] {
+  return set.groups.map((group) => ({
+    id: vocabGroupId(set, group),
+    label: group.label,
+  }))
 }
 
 /** Every tagged entry across every registered set. */

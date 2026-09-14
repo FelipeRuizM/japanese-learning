@@ -4,10 +4,15 @@
 It is the durable spec. `PLAN.md` holds the phased build order.
 
 > **Status — 2026-09-14. Kana curriculum complete at v2.1; the course companion is
-> under way at v2.8.** The first pillar is finished — all seven phases, all five
+> under way at v2.9.** The first pillar is finished — all seven phases, all five
 > features in §1, plus two added afterwards on request (the pronunciation chart and
 > writing practice), the **dakuten/handakuten rows**, and **katakana**. It teaches
 > **142 characters across two scripts**.
+>
+> **v2.9 put a quiz builder on it (§11.4).** Weeks, topics and a round length, chosen
+> on the spot, driving the cards as well as the quiz. The selection is a set of group
+> ids and nothing else; a week toggle is derived from it, and carries a real
+> `aria-pressed="mixed"`.
 >
 > **v2.8 re-sourced Week 1 from the week's summary note, and changed what a set IS.**
 > A `VocabSet` is now a **week**, and the note's tables are its **groups** — 44 items in
@@ -712,6 +717,12 @@ kept current. **A component that is not in the styleguide is not done.**
     holding nothing but one such pair still fills four options
   - the picker — every set offered, the active one pressed, the id reported, and
     **nothing rendered at all when only one set is registered**
+  - the scope picker — every topic offered, a week **mixed** once one of its topics is
+    off, mixed CLEARING rather than filling, the cards narrowing to what is left, and a
+    designed empty state when nothing is selected
+  - the round size — only fillable presets offered, the round the length the picker
+    says, a short round SAMPLING rather than taking a prefix, distractors still drawn
+    from the whole scope, and exactly one option pressed as the scope narrows
   - writing practice — the prompt names the right script, and **no glyph reaches the
     replay control's accessible name**
   - the deck reducer — toggle, select row, select all, clear
@@ -930,12 +941,41 @@ only fit one of them. The build follows that split rather than flattening it:
 
 ### 11.4 The vocabulary screen — `#/vocabulary`
 
-**There is no selection step, and that is deliberate.** The kana deck exists because 142
-characters is far too many for one sitting, so the grid had to come first and the deck
-had to carry a choice between screens. A vocabulary set is a class note — sixteen to
-nineteen items, which _is_ one sitting. **The set is the deck**, so choosing one in the
-picker is the whole of the selection, and a second selection grid would add a screen
-that saves nobody any work.
+**The selection is WEEKS AND TOPICS, built on the spot, plus a round length.**
+
+> **Until v2.9 there was no selection step at all, and that was right at the time.** The
+> reasoning was that a vocabulary set is a class note — sixteen to nineteen items, which
+> _is_ one sitting — so the set was the deck and a selection grid would have saved nobody
+> any work. A set is a **week** as of v2.8: forty-four items, and a second week will not
+> make it shorter. The decision was sound and its premise changed. Do not re-argue it as
+> though it had been a mistake.
+
+- **`useVocabScope` holds A SET OF GROUP IDS AND NOTHING ELSE.** A week is not stored
+  beside its topics; its toggle is derived from whether its groups are all in, all out,
+  or mixed. Storing both admits "week on, no topics selected", and the screen would then
+  have to choose which of two facts to believe.
+- **`aria-pressed="mixed"` is a real value and this is what it is for.** A half-lit week
+  is neither pressed nor unpressed, and collapsing it into either makes the control lie.
+  **Mixed clears rather than fills** — a control you can see is partly on is one you are
+  on your way to turning off, and filling from mixed would leave no way to clear a week
+  short of clicking every topic.
+- **The scope drives the cards as well as the quiz**, and a changed scope remounts both:
+  carrying on from card 19 of a list that just changed underneath is not something anyone
+  asked for.
+- **The round length is `5 · 10 · 15 · 20 · All (n)`**, presets strictly below the total
+  and then `all`. A stored size the scope can no longer offer falls back to `'all'`, so
+  exactly one option is ever pressed. Fewer than two options and the control renders
+  nothing — `SetPicker`'s rule for a single set.
+- **A short round is a SAMPLE, not a prefix.** Shuffle then take. Taking first would deal
+  the same five words every time and make the rest of a week unreachable through a short
+  round, which is the failure a length control exists to avoid rather than cause.
+- **The limit is on the QUESTIONS, never the distractors.** A ten-question round over a
+  topic of forty still draws its wrong answers from all forty, or the wrong answers get
+  easier the shorter the round gets.
+
+It is still **not** the kana deck. That is a context above the router because a kana
+selection has to survive walking between four screens; this is one screen, so it is page
+state, and vocabulary still never enters `DeckProvider` (bite 11).
 
 The consequence is worth stating plainly: **vocabulary never enters `DeckProvider`.**
 The kana quiz therefore cannot be handed a vocabulary item — structurally, rather than
@@ -964,6 +1004,12 @@ because someone remembered not to.
   > about scope, and the category chip is rendered outside the card element precisely so
   > a query can tell them apart. Two tests failed on one shuffle in forty-four before
   > they were scoped.
+
+  > **Every topic label is now permanently on screen as a scope toggle, and that is not
+  > a hint.** The rule is that the category is not STATED beside the prompt; a control
+  > offering all eleven categories states none of them. The test excludes buttons for
+  > exactly that reason. This is a rule that had to be re-argued rather than
+  > re-pointed — "no group label appears anywhere" was never the thing worth protecting.
 - Each set **cites its class note on screen**, so a card that looks wrong can be checked
   rather than argued about.
 

@@ -140,11 +140,57 @@ export function buildVocabQuestion(
   return { direction, answer, options }
 }
 
-/** The chosen set, shuffled, one question per item. */
+/**
+ * How long a round may be, as offered on screen.
+ *
+ * Fixed presets rather than a stepper or a slider: the choice is "a short one
+ * or a long one", and five taps to reach 20 is four taps of nothing.
+ */
+export const ROUND_SIZE_PRESETS = [5, 10, 15, 20] as const
+
+/** A chosen round length. `'all'` tracks the scope rather than pinning a number. */
+export type RoundSize = number | 'all'
+
+/**
+ * The lengths worth offering for a scope of `total` words.
+ *
+ * Presets STRICTLY below the total, then `'all'`. A preset equal to the total
+ * would sit beside `All (20)` meaning the same thing, and one larger would
+ * promise questions the scope cannot fill — a round is one question per word,
+ * never a word asked twice.
+ *
+ * Fewer than two options means there is nothing to choose, and the caller
+ * renders no control — the rule `SetPicker` already follows for a single set.
+ */
+export function roundSizeOptions(total: number): RoundSize[] {
+  return [...ROUND_SIZE_PRESETS.filter((n) => n < total), 'all']
+}
+
+/** How many questions a chosen size actually yields. */
+export function roundLength(size: RoundSize, total: number): number {
+  return size === 'all' ? total : Math.min(size, total)
+}
+
+/**
+ * The chosen scope, shuffled, one question per item — up to `limit`.
+ *
+ * SHUFFLE THEN TAKE, so a shorter round is a random SAMPLE of the scope rather
+ * than its first few words. Taking before shuffling would drill the same
+ * handful every time and quietly make the rest of a week unreachable.
+ *
+ * The LIMIT APPLIES TO THE QUESTIONS, NOT TO THE DISTRACTORS: every question
+ * still draws from the whole chosen scope. A ten-question round over a topic of
+ * forty is a test of that topic, and narrowing the distractors to the ten that
+ * happened to be drawn would make the wrong answers easier the shorter the
+ * round got.
+ */
 export function buildVocabRound(
   scope: readonly VocabEntry[],
   all: readonly VocabEntry[],
   rng: Rng,
+  limit = Infinity,
 ): VocabQuizQuestion[] {
-  return shuffle(scope, rng).map((entry) => buildVocabQuestion(entry, scope, all, rng))
+  return shuffle(scope, rng)
+    .slice(0, Math.max(0, limit))
+    .map((entry) => buildVocabQuestion(entry, scope, all, rng))
 }

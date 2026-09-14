@@ -21,6 +21,9 @@ import { usePronunciation } from '../lib/usePronunciation'
 import { GridCell, GridGap } from '../components/GridCell'
 import { SoundCell } from '../components/SoundCell'
 import { SetPicker } from '../components/SetPicker'
+import { ScopePicker } from '../components/ScopePicker'
+import { RoundSizePicker } from '../components/RoundSizePicker'
+import { useVocabScope } from '../lib/useVocabScope'
 import { FLOW_FIXTURE } from '../characters/flowFixture'
 import { VOCAB_SETS, everyVocabEntry, vocabEntries } from '../vocab/registry'
 import { buildVocabQuestion } from '../lib/vocabQuiz'
@@ -32,6 +35,7 @@ import {
   Button,
   ButtonLink,
   Chip,
+  Toggle,
   Glyph,
   Label,
   Rule,
@@ -302,6 +306,55 @@ function PickerDemo() {
   )
 }
 
+/** All three toggle states side by side, which is the only way to check them. */
+function ToggleDemo() {
+  const [on, setOn] = useState(true)
+  const [off, setOff] = useState(false)
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Toggle
+        pressed={on}
+        onClick={() => {
+          setOn((v) => !v)
+        }}
+      >
+        Pressed
+      </Toggle>
+      <Toggle
+        pressed={off}
+        onClick={() => {
+          setOff((v) => !v)
+        }}
+      >
+        Not pressed
+      </Toggle>
+      {/* Static: 'mixed' is derived from other state wherever it is real. */}
+      <Toggle pressed="mixed" onClick={() => undefined}>
+        Mixed
+      </Toggle>
+      <Toggle size="sm" pressed={false} onClick={() => undefined}>
+        Small
+      </Toggle>
+    </div>
+  )
+}
+
+/** Live: the week toggle is derived from its topics, so it needs real state. */
+function ScopeDemo() {
+  const scope = useVocabScope()
+  return (
+    <div className="flex flex-col gap-4">
+      <ScopePicker scope={scope} />
+      <RoundSizePicker
+        total={scope.entries.length}
+        size={10}
+        onChange={() => undefined}
+      />
+      <Label>{scope.entries.length} words selected</Label>
+    </div>
+  )
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
@@ -476,6 +529,33 @@ export function Styleguide() {
           registered it renders nothing at all, because a picker offering one choice is
           furniture. The pressed state is the same ground-on-accent inversion a selected
           cell uses: the picker and the chart under it are saying the same thing.
+        </p>
+      </Section>
+
+      <Section title="Toggle">
+        <ToggleDemo />
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          The selection treatment, in one place &mdash; <code>GridCell</code>,{' '}
+          <code>SetPicker</code> and the scope picker all say &ldquo;this one is
+          on&rdquo; with the same ground-on-accent inversion. <code>mixed</code> is a
+          real <code>aria-pressed</code> value and gets its own treatment, an outline
+          and a wash rather than a fill: a &ldquo;select the whole week&rdquo; control
+          with half its topics on is neither pressed nor unpressed, and saying either
+          would make the button lie. <code>sm</code> is for a long row of them; the 44px
+          hit target does not change.
+        </p>
+      </Section>
+
+      <Section title="Scope picker and round size">
+        <ScopeDemo />
+        <p className="m-0 max-w-prose text-sm text-ink-2">
+          Which weeks and which topics, and how long a round is. Each week&rsquo;s own
+          toggle leads its topics rather than sitting in a separate row above them,
+          because that toggle <em>is</em> &ldquo;all of this week&rdquo; &mdash; and
+          with two weeks registered a separate row would leave the reader to work out
+          which topics belonged to which. The size picker offers only presets the scope
+          can actually fill, then <code>All</code>; with fewer than two options it
+          renders nothing, the rule the set picker follows for a single set.
         </p>
       </Section>
 

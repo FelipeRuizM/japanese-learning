@@ -733,12 +733,75 @@ Not flashcards. A **generator**, because 1–100 is a rule (CLAUDE.md §11.3, §
 > mode toggle, and comes back properly in Phase 15, when the selection becomes weeks and
 > topics rather than one set.
 
+---
+
+## Phase 15 — The quiz builder ✅
+
+- [x] `src/lib/useVocabScope.ts` — the selection, as a set of group ids and nothing else
+- [x] `ScopePicker` — each week's own toggle leads its topics
+- [x] `RoundSizePicker` — `5 · 10 · 15 · 20 · All (n)`, capped at the scope
+- [x] `Toggle` in the primitives, with a real `mixed` state; `SetPicker` rebuilt on it
+- [x] `buildVocabRound` takes a limit — shuffle then take, so a short round is a SAMPLE
+- [x] The scope drives the **cards as well as the quiz**
+- [x] A designed empty state for an empty selection
+- [x] `Styleguide.test.tsx` — the styleguide had no test at all until two live demos
+      landed in it
+- [x] `feat: choose weeks, topics and round length on the spot`
+
+**Deployed as 2.9.**
+
+> **Phase 9's "there is no selection step" was right then and expired in Phase 14.** The
+> reasoning was that a set is one class note — sixteen to nineteen items, which is one
+> sitting. A set is a week now: forty-four items, and a second week will not make it
+> shorter. The decision was sound and its premise changed; that is worth separating from
+> a decision that was wrong.
+
+> **THE SELECTION IS A SET OF GROUP IDS, AND NOTHING ELSE.** A week is not stored beside
+> its topics — its toggle is derived from whether its groups are all in, all out, or
+> mixed. Storing both admits "week on, no topics selected", and the screen would then
+> have to pick which of two facts to believe.
+
+> **`aria-pressed="mixed"` is a real value, and using it is what made the derivation
+> cheap.** A half-lit week is neither pressed nor unpressed, and collapsing it into
+> either makes the button lie about itself. **Mixed CLEARS rather than fills:** a control
+> you can see is partly on is one you are on your way to turning off, and filling from
+> mixed would leave no way to clear a week short of clicking every topic.
+
+> **A short round is a SAMPLE, not a prefix.** Shuffle then take — taking first would
+> deal the same five words every time and make the rest of a week unreachable through a
+> short round, which is the failure a length control exists to avoid rather than cause.
+> The limit applies to the QUESTIONS only: distractors still come from the whole chosen
+> scope, or a ten-question round over a topic of forty would have easier wrong answers
+> than a forty-question one.
+
+> **A stored size the scope can no longer offer falls back to `'all'`.** Narrow the
+> topics until 20 is off the menu and, without that, every option is unpressed and the
+> round is some length nothing on screen accounts for. A test walks nine topics off one
+> at a time and asserts exactly one option is pressed throughout.
+
+> **The topic labels are now permanently on screen, and one test had to be re-argued
+> rather than re-pointed.** "The group label is withheld until the reveal" was checking
+> that no group label appears anywhere. That is no longer the rule and should not be: a
+> list of all eleven topics narrows nothing about the card in front of you. The rule is
+> that the category is not STATED beside the prompt, so the query now excludes buttons —
+> a control offering every category states none of them.
+
+> **The styleguide had no test at all.** It is the one route nothing else renders, so it
+> could have been throwing for a phase and every suite would have stayed green. Two live
+> demos — components holding real state rather than static swatches — is what made that
+> worth fixing. It is a smoke test on purpose: duplicating the components' own
+> assertions here would make the styleguide a second place to update, which is how a
+> styleguide stops being kept current.
+
 ## What is left
 
 - **Deploy it.** No remote, so no workflow run, so no site (§2). Everything else on this
   list is smaller than this one.
-- **The quiz builder** — weeks, topics and a question count, chosen on the spot.
 - **Week 2**, whenever the vault has it — a data module and a registry entry per §11.8.
+- **The scope picker gets tall at 375px** — eleven topic toggles with labels as long as
+  "Thanks, apologies & basic responses" wrap to a lot of rows above the card. The week
+  toggle makes all-or-nothing one tap, so it is usable; a disclosure that collapses the
+  topics once chosen is the obvious next move if it grates.
 - **Kanji**, which the course teaches and which needs the `layout: 'flow'` branch the
   grid has carried unused since Phase 2 (§3.2).
 

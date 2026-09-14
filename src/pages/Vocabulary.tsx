@@ -1,12 +1,20 @@
 import { useState } from 'react'
-import type { VocabEntry, VocabSet } from '../types/vocab'
-import { VOCAB_SETS, everyVocabEntry, speakable, vocabEntries } from '../vocab/registry'
-import { useVocabSet } from '../lib/useVocabSet'
+import type { VocabEntry } from '../types/vocab'
+import { everyVocabEntry, speakable } from '../vocab/registry'
+import { useVocabScope, type VocabScope } from '../lib/useVocabScope'
 import { shuffle, systemRng } from '../lib/shuffle'
-import { buildVocabRound, type VocabQuizQuestion } from '../lib/vocabQuiz'
+import {
+  buildVocabRound,
+  roundLength,
+  roundSizeOptions,
+  type RoundSize,
+  type VocabQuizQuestion,
+} from '../lib/vocabQuiz'
 import { usePronunciation } from '../lib/usePronunciation'
 import { PronunciationNote } from '../components/SpeakButton'
 import { SetPicker } from '../components/SetPicker'
+import { ScopePicker } from '../components/ScopePicker'
+import { RoundSizePicker } from '../components/RoundSizePicker'
 import { VocabCard } from '../components/VocabCard'
 import { VocabQuizCard } from '../components/VocabQuizCard'
 import { Button, Chip, HeadingLabel, Label } from '../components/ui/primitives'
@@ -14,26 +22,24 @@ import { Button, Chip, HeadingLabel, Label } from '../components/ui/primitives'
 /**
  * Vocabulary (CLAUDE.md §11.4).
  *
- * THERE IS NO SELECTION STEP, AND THAT IS THE DECISION PHASE 8 DEFERRED.
+ * THE SELECTION IS WEEKS AND TOPICS, BUILT ON THE SPOT.
  *
- * The kana deck exists because 142 characters is far too many for one sitting,
- * so the grid had to come first and the deck had to carry a choice between
- * screens. A vocabulary set is a class note — sixteen to nineteen items, which
- * is one sitting. The set IS the deck, so picking one is the whole of the
- * selection, and building a second selection grid would add a screen to save
- * nobody any work.
+ * Phase 9 had no selection step at all, on the reasoning that a set was one
+ * class note — sixteen to nineteen items, which is one sitting. That reasoning
+ * expired when a set became a WEEK: forty-four items is not one sitting, and a
+ * second week will not make it shorter. So the choice came back, in the shape
+ * the material actually has — some weeks, some topics inside them, and a round
+ * length.
  *
- * The consequence worth stating: vocabulary never enters `DeckProvider`, so the
- * kana quiz cannot receive a vocabulary item (CLAUDE.md §10, bite 11).
+ * It is still NOT the kana deck. The deck is a context above the router because
+ * a kana selection has to survive walking between four screens; this is one
+ * screen, so it is page state (`useVocabScope`), and vocabulary still never
+ * enters `DeckProvider` (bite 11).
  *
- * CARDS AND QUIZ ARE ONE ROUTE WITH A MODE, not two routes.
- *
- * The kana half gives each activity its own nav entry, and copying that here
- * would put a second "Quiz" in the nav — seven entries, two of them ambiguous.
- * It would also throw away the chosen set on the way between them, since which
- * set you are reading is per-page state (`useVocabSet`) exactly as which chart
- * you are reading is. Studying a set and then testing yourself on the same set
- * is one sitting, so it is one screen.
+ * CARDS AND QUIZ ARE ONE ROUTE WITH A MODE, and the scope picker is now the
+ * strongest argument for that: the selection is several taps of work, and
+ * splitting the two into separate routes would throw it away on the way
+ * between them.
  */
 const MODES = [
   { id: 'cards', label: 'Cards' },
@@ -43,46 +49,63 @@ const MODES = [
 type Mode = (typeof MODES)[number]['id']
 
 export function Vocabulary() {
-  const { set, choose } = useVocabSet()
+  const scope = useVocabScope()
   const [mode, setMode] = useState<Mode>('cards')
+  /**
+   * Held HERE rather than inside the quiz, so switching to the cards and back
+   * does not silently reset a round length that was deliberately chosen.
+   */
+  const [size, setSize] = useState<RoundSize>(10)
+
+  const total = scope.entries.length
+  // A stored size the current scope cannot offer falls back to `'all'`, so
+  // exactly one option is ever pressed. Narrowing the topics until 20 is off
+  // the menu would otherwise leave every option unpressed and the round some
+  // length nothing on screen accounts for.
+  const options = roundSizeOptions(total)
+  const activeSize: RoundSize = options.includes(size) ? size : 'all'
 
   return (
     <section className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3">
-        <SetPicker
-          sets={VOCAB_SETS}
-          activeId={set?.id ?? ''}
-          onChange={choose}
-          label="Vocabulary set"
-        />
-        <SetPicker
-          sets={MODES}
-          activeId={mode}
-          onChange={setMode}
-          label="Practice mode"
-        />
+      <div className="flex flex-col gap-4">
+        <ScopePicker scope={scope} />
+        <div className="flex flex-col gap-2">
+          <Label>Practice</Label>
+          <SetPicker
+            sets={MODES}
+            activeId={mode}
+            onChange={setMode}
+            label="Practice mode"
+          />
+        </div>
+        {mode === 'quiz' ? (
+          <RoundSizePicker total={total} size={activeSize} onChange={setSize} />
+        ) : null}
       </div>
 
-      {set === null ? (
-        <p className="m-0 max-w-prose font-sans text-ink-1">
-          No vocabulary has been added yet.
-        </p>
+      {total === 0 ? (
+        <NothingSelected />
       ) : (
         <>
           {/*
-            Remounting on a set OR mode change reshuffles and resets the
-            position in one move, the same way the kana flashcards remount on a
-            deck change. Switching mode and coming back is a fresh pass, which
-            is what someone switching mode is asking for.
+            Keyed on the SELECTION, so changing it reshuffles and returns to the
+            start — the same remount the mode toggle does, and the same one the
+            kana flashcards do on a deck change. Adding a topic mid-pass and
+            carrying on from card 19 of a list that just changed underneath is
+            not something anyone asked for.
           */}
           {mode === 'cards' ? (
-            <Cards key={set.id} set={set} />
+            <Cards key={scope.key} entries={scope.entries} />
           ) : (
-            <Quiz key={set.id} set={set} />
+            <Quiz
+              key={`${scope.key}::${String(activeSize)}`}
+              scope={scope}
+              size={activeSize}
+            />
           )}
 
           <p className="m-0 max-w-prose font-sans text-sm text-ink-2">
-            From {set.source}.
+            From {scope.chosenWeeks.map((week) => week.source).join('; ')}.
           </p>
         </>
       )}
@@ -90,7 +113,24 @@ export function Vocabulary() {
   )
 }
 
-function Cards({ set }: { set: VocabSet }) {
+/**
+ * The designed empty state (CLAUDE.md §8). Turning off the last topic is a
+ * thing a person does on the way to choosing different ones, so this says what
+ * is missing and where the control is, and does not scold.
+ */
+function NothingSelected() {
+  return (
+    <div className="flex flex-col items-start gap-3">
+      <HeadingLabel>Nothing selected</HeadingLabel>
+      <p className="m-0 max-w-prose font-sans text-ink-1">
+        Turn on a week, or any topic within one, and the cards and the quiz will follow
+        what you chose.
+      </p>
+    </div>
+  )
+}
+
+function Cards({ entries }: { entries: VocabEntry[] }) {
   const { status, speak } = usePronunciation()
 
   /**
@@ -98,19 +138,13 @@ function Cards({ set }: { set: VocabSet }) {
    * than `useMemo`, which React may discard and recompute — that would reorder
    * the cards underneath the learner mid-pass.
    */
-  const [cards] = useState<VocabEntry[]>(() => shuffle(vocabEntries(set), systemRng))
+  const [cards] = useState<VocabEntry[]>(() => shuffle(entries, systemRng))
 
   const [index, setIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
 
   const card = cards[index]
-  if (!card) {
-    return (
-      <p className="m-0 max-w-prose font-sans text-ink-1">
-        This set has no cards in it yet.
-      </p>
-    )
-  }
+  if (!card) return null
 
   const go = (next: number) => {
     setIndex(next)
@@ -169,13 +203,14 @@ function Cards({ set }: { set: VocabSet }) {
   )
 }
 
-function Quiz({ set }: { set: VocabSet }) {
+function Quiz({ scope, size }: { scope: VocabScope; size: RoundSize }) {
   const [roundId, setRoundId] = useState(0)
 
   return (
     <Round
       key={roundId}
-      set={set}
+      scope={scope}
+      size={size}
       onAgain={() => {
         setRoundId((n) => n + 1)
       }}
@@ -183,17 +218,30 @@ function Quiz({ set }: { set: VocabSet }) {
   )
 }
 
-function Round({ set, onAgain }: { set: VocabSet; onAgain: () => void }) {
+function Round({
+  scope,
+  size,
+  onAgain,
+}: {
+  scope: VocabScope
+  size: RoundSize
+  onAgain: () => void
+}) {
   const { status, speak } = usePronunciation()
 
   // Built ONCE per round. `useState` with an initialiser rather than `useMemo`,
   // which React is free to discard and recompute — that would reshuffle the
   // questions underneath the learner.
   const [questions] = useState<VocabQuizQuestion[]>(() =>
-    // The last-resort distractor pool is EVERY registered item, not just this
-    // set's. It is only reached by a group too small to fill four options, and
-    // a colliding meaning can never be drawn regardless.
-    buildVocabRound(vocabEntries(set), everyVocabEntry(), systemRng),
+    // The last-resort distractor pool is EVERY registered item, not just the
+    // chosen scope's. It is only reached by a group too small to fill four
+    // options, and a colliding meaning can never be drawn regardless.
+    buildVocabRound(
+      scope.entries,
+      everyVocabEntry(),
+      systemRng,
+      roundLength(size, scope.entries.length),
+    ),
   )
 
   const [index, setIndex] = useState(0)
@@ -266,7 +314,7 @@ function RoundSummary({
       </p>
       <p className="m-0 max-w-prose text-ink-1">
         {score === total
-          ? 'Every one. Try another set, or go again.'
+          ? 'Every one. Change the topics, or go again.'
           : 'Nothing is recorded — start another round whenever you like.'}
       </p>
       <Button variant="primary" onClick={onAgain}>

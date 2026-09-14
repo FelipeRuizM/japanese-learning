@@ -121,6 +121,65 @@ export function Chip({ children }: { children: ReactNode }) {
 }
 
 /**
+ * A toggle that stays on — the selection treatment, in one place.
+ *
+ * `GridCell`, `SetPicker` and the vocabulary scope picker all say "this one is
+ * on" the same way: ground on accent, the same inversion a selected grid cell
+ * uses (CLAUDE.md §7). It lived only in `SetPicker` until a second multi-select
+ * picker wanted it, which is the point at which copying the class string would
+ * have meant three places to keep in step.
+ *
+ * `pressed` ACCEPTS 'mixed', which is a real `aria-pressed` value and exactly
+ * what a "select the whole week" control needs when half the week is on.
+ * Collapsing that into `false` would make the button lie, and collapsing it
+ * into `true` would make "clear the week" the action of a control that looks
+ * already-clear. It gets its own treatment: the accent as an outline and a
+ * wash, rather than a fill.
+ */
+export function Toggle({
+  pressed,
+  onClick,
+  children,
+  label,
+  size = 'md',
+}: {
+  pressed: boolean | 'mixed'
+  onClick: () => void
+  children: ReactNode
+  /**
+   * Overrides the accessible name. Must CONTAIN the visible text — a name that
+   * merely replaces it breaks voice control, which is the defect §8 records
+   * from the grid cell.
+   */
+  label?: string | undefined
+  /** `sm` for a long list of them. The 44px hit target is unchanged (§5). */
+  size?: 'sm' | 'md'
+}) {
+  const states = {
+    true: 'border-accent bg-accent text-ground',
+    mixed: 'border-accent bg-accent-soft text-ink-0',
+    false: 'border-rule bg-transparent text-ink-1 hover:bg-accent-soft',
+  } as const
+
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      {...(label === undefined ? {} : { 'aria-label': label })}
+      onClick={onClick}
+      className={[
+        'inline-flex min-h-11 cursor-pointer items-center justify-center rounded-md',
+        'border font-sans font-medium transition-colors',
+        size === 'sm' ? 'px-3 text-sm' : 'px-4 text-base',
+        states[`${pressed}`],
+      ].join(' ')}
+    >
+      {children}
+    </button>
+  )
+}
+
+/**
  * A kana glyph. The ONE place the JP face is applied — romaji and chrome are
  * Latin (CLAUDE.md §7).
  *

@@ -1,3 +1,5 @@
+import { Toggle } from './ui/primitives'
+
 /**
  * Which set is on screen.
  *
@@ -33,31 +35,17 @@ export function SetPicker<Id extends string>({
 
   return (
     <div role="group" aria-label={label} className="flex flex-wrap gap-2">
-      {sets.map((set) => {
-        const active = set.id === activeId
-        return (
-          <button
-            key={set.id}
-            type="button"
-            aria-pressed={active}
-            onClick={() => {
-              onChange(set.id)
-            }}
-            // The same inversion a selected cell uses — ground on accent. The
-            // picker and the chart under it are saying the same thing ("this
-            // one is on"), so they say it the same way.
-            className={[
-              'inline-flex min-h-11 cursor-pointer items-center justify-center rounded-md',
-              'border px-4 font-sans text-base font-medium transition-colors',
-              active
-                ? 'border-accent bg-accent text-ground'
-                : 'border-rule bg-transparent text-ink-1 hover:bg-accent-soft',
-            ].join(' ')}
-          >
-            {set.label}
-          </button>
-        )
-      })}
+      {sets.map((set) => (
+        <Toggle
+          key={set.id}
+          pressed={set.id === activeId}
+          onClick={() => {
+            onChange(set.id)
+          }}
+        >
+          {set.label}
+        </Toggle>
+      ))}
     </div>
   )
 }

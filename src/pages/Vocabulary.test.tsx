@@ -28,17 +28,24 @@ const cardEl = () => {
 /**
  * The group labels showing as the reveal's category chip.
  *
- * SCOPED OUTSIDE THE CARD, and it has to be: でんわ MEANS "Phone" and sits in
- * the group labelled "Phone", so a bare text query cannot tell the chip from
- * the card's own meaning. Both faces of the card are always in the DOM, so
- * before any reveal that query already finds one — a test keyed on text alone
- * passes or fails on which item the shuffle deals, which is the worst kind of
- * failure to debug. The chip is rendered outside the card button; that is the
- * distinction this filters on.
+ * TWO THINGS ARE EXCLUDED, and each is a real thing on the page:
+ *
+ *   - THE CARD ITSELF. でんわ MEANS "Phone" and sits in the group labelled
+ *     "Phone", so a bare text query cannot tell the chip from the card's own
+ *     meaning. Both faces are always in the DOM, so before any reveal that
+ *     query already finds one — the test then passes or fails on which item the
+ *     shuffle deals, which is the worst kind of failure to debug.
+ *   - BUTTONS. Every topic label is permanently on screen as a toggle in the
+ *     scope picker, and that is not a hint: a list of all eleven topics says
+ *     nothing about which one THIS card belongs to. The rule is that the
+ *     category is not STATED beside the prompt, and a control offering every
+ *     category states none of them.
  */
 const groupChipsOnScreen = (labels: readonly string[]) =>
   labels.filter((label) =>
-    screen.queryAllByText(label).some((el) => !cardEl().contains(el)),
+    screen
+      .queryAllByText(label)
+      .some((el) => !cardEl().contains(el) && el.closest('button') === null),
   )
 
 function firstSet(): VocabSet {
@@ -270,6 +277,39 @@ const optionButtons = () =>
     return button
   })
 
+/**
+ * The number of questions the round on screen says it has.
+ *
+ * READ OFF THE HEADING rather than computed from the data. A round is now a
+ * SAMPLE of the chosen scope — it is however long the size picker says — so a
+ * test that recomputed the length would be asserting its own arithmetic
+ * against the page's, and would agree with a page that had ignored the picker
+ * entirely.
+ */
+function roundTotal(): number {
+  const heading = screen.getByRole('heading', {
+    level: 2,
+    name: /^Question \d+ of \d+$/,
+  })
+  const total = /of (\d+)$/.exec(heading.textContent ?? '')?.[1]
+  if (!total) throw new Error(`unreadable round heading: "${heading.textContent}"`)
+  return Number(total)
+}
+
+/** Answer and advance through a whole round, counting the verdicts. */
+async function walkRound(user: ReturnType<typeof userEvent.setup>) {
+  const total = roundTotal()
+  let correct = 0
+  for (let i = 0; i < total; i++) {
+    const first = optionButtons()[0]
+    if (!first) throw new Error('no options')
+    await user.click(first)
+    if (screen.queryByText('Correct') !== null) correct++
+    await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
+  }
+  return { total, correct }
+}
+
 /** Switch the page into quiz mode. */
 async function enterQuiz(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Quiz' }))
@@ -289,17 +329,15 @@ describe('Vocabulary quiz', () => {
     )
   })
 
-  it('asks one question per item in the chosen set', async () => {
+  it('asks the chosen number of questions, not the whole scope', async () => {
     const user = userEvent.setup()
     show()
     await enterQuiz(user)
 
-    expect(
-      screen.getByRole('heading', {
-        level: 2,
-        name: `Question 1 of ${allVocab(firstSet()).length}`,
-      }),
-    ).toBeInTheDocument()
+    // 10 is the default, and the week holds far more than that — so this also
+    // says the round is a SAMPLE rather than an enumeration.
+    expect(allVocab(firstSet()).length).toBeGreaterThan(10)
+    expect(roundTotal()).toBe(10)
   })
 
   it('always offers four options', async () => {
@@ -311,19 +349,12 @@ describe('Vocabulary quiz', () => {
   })
 
   /** Four options that show the same thing twice is not a question (§11.2). */
-  /*
-   * WALKS THE WHOLE ROUND, which is now 44 questions rather than 16: a week
-   * is one set now, so a round is the whole week. Two clicks each through
-   * jsdom overruns the 5s default, hence the explicit timeout rather than a
-   * shortened walk — the point of these three is that the round holds
-   * together end to end, and a partial walk would not say that.
-   */
   it('never shows the same option value twice', async () => {
     const user = userEvent.setup()
     show()
     await enterQuiz(user)
 
-    const total = allVocab(firstSet()).length
+    const total = roundTotal()
     for (let i = 0; i < total; i++) {
       const shown = optionButtons().map((b) => b.textContent)
       expect(new Set(shown).size, `question ${i + 1}`).toBe(4)
@@ -333,7 +364,7 @@ describe('Vocabulary quiz', () => {
       await user.click(first)
       await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
     }
-  }, 30000)
+  })
 
   it('marks the right answer and says so in words, not only colour', async () => {
     const user = userEvent.setup()
@@ -382,60 +413,31 @@ describe('Vocabulary quiz', () => {
     expect(allVocab(firstSet()).some((i) => i.kana === spoken.ja)).toBe(true)
   })
 
-  /*
-   * WALKS THE WHOLE ROUND, which is now 44 questions rather than 16: a week
-   * is one set now, so a round is the whole week. Two clicks each through
-   * jsdom overruns the 5s default, hence the explicit timeout rather than a
-   * shortened walk — the point of these three is that the round holds
-   * together end to end, and a partial walk would not say that.
-   */
   it('counts the round and reports a score that matches the verdicts', async () => {
     const user = userEvent.setup()
     show()
     await enterQuiz(user)
 
-    const total = allVocab(firstSet()).length
-    let correct = 0
-
-    for (let i = 0; i < total; i++) {
-      const first = optionButtons()[0]
-      if (!first) throw new Error('no options')
-      await user.click(first)
-      if (screen.queryByText('Correct') !== null) correct++
-      await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
-    }
+    const { total, correct } = await walkRound(user)
 
     expect(
       screen.getByRole('heading', { level: 2, name: 'Round complete' }),
     ).toBeInTheDocument()
     expect(screen.getByText(`${correct} / ${total}`)).toBeInTheDocument()
-  }, 30000)
+  })
 
-  /*
-   * WALKS THE WHOLE ROUND, which is now 44 questions rather than 16: a week
-   * is one set now, so a round is the whole week. Two clicks each through
-   * jsdom overruns the 5s default, hence the explicit timeout rather than a
-   * shortened walk — the point of these three is that the round holds
-   * together end to end, and a partial walk would not say that.
-   */
   it('starts a fresh round on Go again', async () => {
     const user = userEvent.setup()
     show()
     await enterQuiz(user)
 
-    const total = allVocab(firstSet()).length
-    for (let i = 0; i < total; i++) {
-      const first = optionButtons()[0]
-      if (!first) throw new Error('no options')
-      await user.click(first)
-      await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
-    }
+    const { total } = await walkRound(user)
 
     await user.click(screen.getByRole('button', { name: 'Go again' }))
     expect(
       screen.getByRole('heading', { level: 2, name: `Question 1 of ${total}` }),
     ).toBeInTheDocument()
-  }, 30000)
+  })
 
   /* Removed with its sibling above, and for the same reason. */
 
@@ -452,4 +454,208 @@ describe('Vocabulary quiz', () => {
       }),
     ).toBeInTheDocument()
   })
+})
+
+/* ------------------------------------------------------------------------- */
+
+const topicToggle = (label: string) => screen.getByRole('button', { name: label })
+
+const weekToggle = (set: VocabSet) =>
+  screen.getByRole('button', { name: `All of ${set.label}` })
+
+const cardCount = () => {
+  const heading = screen.getByRole('heading', { level: 2, name: /^Card \d+ of \d+$/ })
+  return Number(/of (\d+)$/.exec(heading.textContent ?? '')?.[1])
+}
+
+describe('the scope picker', () => {
+  it('offers every topic of every week, all on to begin with', () => {
+    show()
+    const group = screen.getByRole('group', { name: firstSet().label })
+
+    for (const topic of firstSet().groups) {
+      expect(within(group).getByRole('button', { name: topic.label })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+    }
+    expect(weekToggle(firstSet())).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  /**
+   * The week toggle is DERIVED from its topics rather than stored beside them.
+   * Storing both would allow "week on, no topics selected", and the screen
+   * would then have to choose which of the two facts to believe.
+   */
+  it('marks the week mixed once a topic is turned off', async () => {
+    const user = userEvent.setup()
+    show()
+    const topic = firstSet().groups[0]
+    if (!topic) throw new Error('the week has no topics')
+
+    await user.click(topicToggle(topic.label))
+
+    expect(topicToggle(topic.label)).toHaveAttribute('aria-pressed', 'false')
+    expect(weekToggle(firstSet())).toHaveAttribute('aria-pressed', 'mixed')
+  })
+
+  it('narrows the cards to the topics left on', async () => {
+    const user = userEvent.setup()
+    show()
+    const topic = firstSet().groups[0]
+    if (!topic) throw new Error('the week has no topics')
+    const before = cardCount()
+
+    await user.click(topicToggle(topic.label))
+
+    expect(cardCount()).toBe(before - topic.items.length)
+  })
+
+  /**
+   * This is the coverage Phase 14 lost when the second set went away, back in
+   * the shape the selection actually has now: a changed scope restarts the
+   * pass rather than carrying on from card 19 of a list that just changed.
+   */
+  it('restarts the cards when the scope changes', async () => {
+    const user = userEvent.setup()
+    show()
+    const topic = firstSet().groups[0]
+    if (!topic) throw new Error('the week has no topics')
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    expect(
+      screen.getByRole('heading', { level: 2, name: /^Card 3 of / }),
+    ).toBeInTheDocument()
+
+    await user.click(topicToggle(topic.label))
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: /^Card 1 of / }),
+    ).toBeInTheDocument()
+  })
+
+  /** MIXED CLEARS. A half-lit control is one you are on your way to turning off. */
+  it('clears the whole week from mixed, rather than filling it', async () => {
+    const user = userEvent.setup()
+    show()
+    const topic = firstSet().groups[0]
+    if (!topic) throw new Error('the week has no topics')
+
+    await user.click(topicToggle(topic.label))
+    expect(weekToggle(firstSet())).toHaveAttribute('aria-pressed', 'mixed')
+
+    await user.click(weekToggle(firstSet()))
+    expect(weekToggle(firstSet())).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('fills the week again from empty', async () => {
+    const user = userEvent.setup()
+    show()
+
+    await user.click(weekToggle(firstSet()))
+    await user.click(weekToggle(firstSet()))
+
+    expect(weekToggle(firstSet())).toHaveAttribute('aria-pressed', 'true')
+    expect(cardCount()).toBe(allVocab(firstSet()).length)
+  })
+
+  /** A designed empty state, not a bare "no data" (CLAUDE.md §8). */
+  it('says what to do when nothing is selected', async () => {
+    const user = userEvent.setup()
+    show()
+
+    await user.click(weekToggle(firstSet()))
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Nothing selected' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /^Card / })).toBeNull()
+  })
+})
+
+describe('the round size picker', () => {
+  it('is a quiz control, and not on screen with the cards', async () => {
+    const user = userEvent.setup()
+    show()
+    expect(screen.queryByRole('group', { name: 'Questions' })).toBeNull()
+
+    await enterQuiz(user)
+    expect(screen.getByRole('group', { name: 'Questions' })).toBeInTheDocument()
+  })
+
+  it('builds a round of the chosen length', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+
+    await user.click(screen.getByRole('button', { name: '5' }))
+
+    expect(roundTotal()).toBe(5)
+  })
+
+  it('offers all of the scope, and says how many that is', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+    const total = allVocab(firstSet()).length
+
+    await user.click(screen.getByRole('button', { name: `All (${total})` }))
+
+    expect(roundTotal()).toBe(total)
+  })
+
+  /**
+   * A round is a SAMPLE, so a short round over a big scope must not always deal
+   * the same five words. Two rounds of five from forty-four agreeing entirely
+   * would be a 1-in-1.1-million coincidence; over three rounds, the assertion
+   * is that at least one pair differs.
+   */
+  it('samples the scope rather than taking its first few', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+    await user.click(screen.getByRole('button', { name: '5' }))
+
+    const rounds: string[] = []
+    for (let i = 0; i < 3; i++) {
+      const seen: string[] = []
+      for (let q = 0; q < 5; q++) {
+        seen.push(
+          optionButtons()
+            .map((b) => b.textContent)
+            .join('/'),
+        )
+        const first = optionButtons()[0]
+        if (!first) throw new Error('no options')
+        await user.click(first)
+        await user.click(screen.getByRole('button', { name: /Next|See how you did/ }))
+      }
+      rounds.push(seen.join('|'))
+      await user.click(screen.getByRole('button', { name: 'Go again' }))
+    }
+
+    expect(new Set(rounds).size).toBeGreaterThan(1)
+  })
+
+  /**
+   * The stored size falls back to `'all'` when the scope can no longer offer
+   * it, so exactly one option is pressed at all times. Without that, narrowing
+   * the topics past a preset leaves every option unpressed and the round some
+   * length nothing on screen accounts for.
+   */
+  it('keeps exactly one option pressed as the scope narrows', async () => {
+    const user = userEvent.setup()
+    show()
+    await enterQuiz(user)
+
+    for (const topic of firstSet().groups.slice(0, 9)) {
+      await user.click(topicToggle(topic.label))
+      const options = within(
+        screen.getByRole('group', { name: 'Questions' }),
+      ).getAllByRole('button')
+      const pressed = options.filter((b) => b.getAttribute('aria-pressed') === 'true')
+      expect(pressed, `after turning off ${topic.label}`).toHaveLength(1)
+    }
+  }, 20000)
 })

@@ -4,6 +4,8 @@ import {
   buildVocabRound,
   vocabDisplayValue,
   vocabDistractorsFor,
+  roundLength,
+  roundSizeOptions,
   VOCAB_OPTION_COUNT,
   type VocabQuizQuestion,
 } from './vocabQuiz'
@@ -236,5 +238,89 @@ describe('a round', () => {
         }
       }
     }
+  })
+})
+
+describe('round size', () => {
+  it('offers only presets the scope can actually fill, then all', () => {
+    expect(roundSizeOptions(44)).toEqual([5, 10, 15, 20, 'all'])
+    expect(roundSizeOptions(12)).toEqual([5, 10, 'all'])
+    expect(roundSizeOptions(7)).toEqual([5, 'all'])
+  })
+
+  /**
+   * A preset EQUAL to the total is dropped, not kept. `20` beside `All (20)`
+   * is two controls doing the same thing, and one of them is about to look
+   * wrong when a topic is turned on.
+   */
+  it('drops a preset that equals the total', () => {
+    expect(roundSizeOptions(20)).toEqual([5, 10, 15, 'all'])
+    expect(roundSizeOptions(5)).toEqual(['all'])
+  })
+
+  /** One option is nothing to choose, and the picker renders nothing. */
+  it('leaves a tiny scope with a single option', () => {
+    expect(roundSizeOptions(3)).toEqual(['all'])
+    expect(roundSizeOptions(0)).toEqual(['all'])
+  })
+
+  it('resolves a size against the scope it is applied to', () => {
+    expect(roundLength('all', 44)).toBe(44)
+    expect(roundLength(10, 44)).toBe(10)
+    // Clamped: a stored 20 against a scope of 12 is 12, never a round padded
+    // out with words asked twice.
+    expect(roundLength(20, 12)).toBe(12)
+  })
+
+  it('asks no word twice, however short the round', () => {
+    const scope = vocabEntries(firstSet())
+    for (let seed = 0; seed < 20; seed++) {
+      const round = buildVocabRound(scope, ALL, seeded(seed), 5)
+      expect(round).toHaveLength(5)
+      expect(new Set(round.map((q) => q.answer.item.id)).size).toBe(5)
+    }
+  })
+
+  it('asks the whole scope when the limit exceeds it', () => {
+    const scope = vocabEntries(firstSet())
+    expect(buildVocabRound(scope, ALL, seeded(1), 500)).toHaveLength(scope.length)
+  })
+
+  /**
+   * SHUFFLE THEN TAKE. Taking before shuffling would deal the same five words
+   * every time and make the rest of a week unreachable through a short round —
+   * which is the failure a length control exists to avoid, not to cause.
+   */
+  it('samples the scope rather than taking its first few', () => {
+    const scope = vocabEntries(firstSet())
+    const drawn = new Set<string>()
+    for (let seed = 0; seed < 20; seed++) {
+      for (const q of buildVocabRound(scope, ALL, seeded(seed), 5)) {
+        drawn.add(q.answer.item.id)
+      }
+    }
+    // Twenty rounds of five over a scope of 44: far more than the five a
+    // take-then-shuffle implementation could ever reach.
+    expect(drawn.size).toBeGreaterThan(20)
+  })
+
+  /**
+   * THE LIMIT IS ON THE QUESTIONS, NOT THE DISTRACTORS. A five-question round
+   * over a whole week must still draw its wrong answers from the whole week —
+   * otherwise the shorter the round, the easier each question gets.
+   */
+  it('still draws distractors from the whole scope', () => {
+    const scope = vocabEntries(firstSet())
+    const asked = new Set<string>()
+    const offered = new Set<string>()
+
+    for (let seed = 0; seed < 20; seed++) {
+      for (const q of buildVocabRound(scope, ALL, seeded(seed), 2)) {
+        asked.add(q.answer.item.id)
+        for (const option of q.options) offered.add(option.item.id)
+      }
+    }
+
+    expect(offered.size).toBeGreaterThan(asked.size)
   })
 })
