@@ -87,16 +87,27 @@ beforeEach(() => {
 
 describe('Vocabulary flashcards', () => {
   /**
-   * A set is now a WEEK, and one week is registered — so the week chooser
-   * renders nothing at all. That is `SetPicker`'s own rule (§3.5) rather than
-   * anything this page decides, and the assertion is here because the page is
-   * where it is visible: a chooser offering a single option is a control that
-   * cannot do anything.
+   * Every registered week is offered, and only the first starts selected.
+   *
+   * This replaced "renders no week chooser while a single week is registered",
+   * which had been passing vacuously since the scope picker arrived — it looked
+   * for a control the page no longer renders. With three weeks it would have
+   * been wrong as well as empty.
    */
-  it('renders no week chooser while a single week is registered', () => {
+  it('offers every registered week, with only the first one on', () => {
     show()
-    expect(VOCAB_SETS).toHaveLength(1)
-    expect(screen.queryByRole('group', { name: 'Vocabulary set' })).toBeNull()
+    const [first, ...rest] = VOCAB_SETS
+    expect(first).toBeDefined()
+    if (first === undefined) return
+
+    expect(
+      screen.getByRole('button', { name: `All of ${first.label}` }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    for (const week of rest) {
+      expect(
+        screen.getByRole('button', { name: `All of ${week.label}` }),
+      ).toHaveAttribute('aria-pressed', 'false')
+    }
   })
 
   it('counts the cards in the chosen set, and heads the position', () => {

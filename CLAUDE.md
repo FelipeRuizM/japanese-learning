@@ -3,11 +3,14 @@
 **Read this file in full at the start of every session before touching any code.**
 It is the durable spec. `PLAN.md` holds the phased build order.
 
-> **Status — 2026-09-14. Kana curriculum complete at v2.1; the course companion is
-> under way at v3.1.** The first pillar is finished — all seven phases, all five
+> **Status — 2026-09-25. Kana curriculum complete at v2.1; the course companion is
+> under way at v3.2.** The first pillar is finished — all seven phases, all five
 > features in §1, plus two added afterwards on request (the pronunciation chart and
 > writing practice), the **dakuten/handakuten rows**, and **katakana**. It teaches
 > **142 characters across two scripts**.
+>
+> **v3.2 added Weeks 2 and 3** — family (20 items) and the Week 3 conversations
+> (52). Neither week has a summary note, so each is sourced from a topic note; see §11.8.
 >
 > **v3.1 gave every drill back-and-forth paging and a retry (§5, §6).** Four quizzes
 > share `useQuizRound`; both flashcard screens share `useCardPass`. Going back is
@@ -892,6 +895,7 @@ Do not build these, and do not sneak them in as a "small addition":
   > come back to before you leave this screen. It lives in component state, dies with
   > the route, and is never keyed to a character across rounds. The moment a mark
   > survived a refresh it would be exactly the prohibited thing.
+
 - **Spaced repetition.** No scheduling, no intervals, no leech detection.
 - **Persistence of any kind.** No `localStorage`, no `sessionStorage`, no IndexedDB, no
   cookies, no URL-encoded deck state, no backend.
@@ -1130,6 +1134,7 @@ because someone remembered not to.
   > offering all eleven categories states none of them. The test excludes buttons for
   > exactly that reason. This is a rule that had to be re-argued rather than
   > re-pointed — "no group label appears anywhere" was never the thing worth protecting.
+
 - Each set **cites its class note on screen**, so a card that looks wrong can be checked
   rather than argued about.
 
@@ -1242,3 +1247,12 @@ asks a grammar question that is secretly a vocabulary question.
    and it is supposed to: a new collision is a real fact about the week, and pinning it
    is how the quiz stays answerable.
 5. Bump `APP_VERSION`, commit, report.
+
+> **When a week has no summary note** — Weeks 2 and 3 do not — the source is the topic
+> note(s) the owner names, and `source` cites that file instead. Weeks 2 and 3 set the
+> precedent: vocabulary tables and the words a note explicitly defines go in; whole
+> dialogue lines stay out; a numbers note stays out, because a rule is a generator (§11.3).
+> Where a table has no romaji column, romaji is supplied in the class's style. Where a
+> note gives two words one gloss but draws a distinction (ちち / おとうさん, トイレ /
+> おてあらい), the distinction goes into the meaning, so they stay out of the
+> shared-meaning list.

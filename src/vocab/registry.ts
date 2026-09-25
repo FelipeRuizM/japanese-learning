@@ -1,6 +1,8 @@
 import type { Speakable } from '../lib/pronunciation'
 import type { VocabEntry, VocabGroup, VocabItem, VocabSet } from '../types/vocab'
 import { WEEK1 } from './week1'
+import { WEEK2 } from './week2'
+import { WEEK3 } from './week3'
 
 /**
  * THE VOCABULARY REGISTRY (CLAUDE.md §11).
@@ -15,7 +17,7 @@ import { WEEK1 } from './week1'
  * needs the week to be the structure and the topics to be its groups, so that
  * is what a set is now.
  */
-export const VOCAB_SETS: readonly VocabSet[] = [WEEK1]
+export const VOCAB_SETS: readonly VocabSet[] = [WEEK1, WEEK2, WEEK3]
 
 export function vocabSetById(id: string): VocabSet | undefined {
   return VOCAB_SETS.find((set) => set.id === id)
